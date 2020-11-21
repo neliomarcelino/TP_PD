@@ -51,7 +51,7 @@ public class Main {
                 System.out.println("A enviar pedido de conexao para o servidor: <" + inicial.getAddr() + ":" + inicial.getPortUdp() + ">");
 
                 socketUdp.send(packet);
-
+				socketUdp.setSoTimeout(5000); // 5 sec
                 packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
 
                 socketUdp.receive(packet);
@@ -87,6 +87,8 @@ public class Main {
                 out.writeObject(msgEnvio);
                 out.flush();
             }
+        }catch (SocketTimeoutException e) {
+            System.out.println("Nao recebi nenhuma resposta (Servidor down?)\n\t"+e);
         }catch(ClassNotFoundException | UnknownHostException e){
             System.out.println("Destino desconhecido:\n\t"+e);
         }catch(NumberFormatException e){
