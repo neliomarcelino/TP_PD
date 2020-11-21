@@ -82,9 +82,19 @@ public class Main {
                 }
 
                 msgEnvio = new Msg("Joao", teclado);
-
-                out = new ObjectOutputStream(socketTcp.getOutputStream());
-                out.writeObject(msgEnvio);
+				synchronized (socketTcp) {
+                    try {
+                        out = new ObjectOutputStream(socketTcp.getOutputStream());
+                    } catch (SocketException e) {
+                        if(t.isAlive()) {
+                            socketTcp = t.getSocketTcp();
+                            out = new ObjectOutputStream(socketTcp.getOutputStream());
+                        }else{
+                            break;
+                        }
+                    }
+                }
+                out.writeUnshared(msgEnvio);
                 out.flush();
             }
         }catch (SocketTimeoutException e) {
