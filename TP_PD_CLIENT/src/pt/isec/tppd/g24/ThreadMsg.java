@@ -26,7 +26,7 @@ public class ThreadMsg extends Thread{
         while(running){
             try{
                 in= new ObjectInputStream(socketTcp.getInputStream());
-                obj = in.readObject();
+                obj = in.readUnshared();
 
                 if(obj instanceof Msg){
                     msg = (Msg)obj;
