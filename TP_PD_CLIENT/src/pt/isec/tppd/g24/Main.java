@@ -5,8 +5,7 @@ import java.net.*;
 import java.util.List;
 
 public class Main {
-    public static final int MAX_SIZE = 100000;
-
+    public static final int MAX_SIZE = 5120;
     public static void main(String[] args)
     {
         if(args.length != 2){
@@ -29,10 +28,12 @@ public class Main {
         MsgServer resposta;
         Msg msgEnvio;
         String teclado;
+
         BufferedReader inTeclado = new BufferedReader(new InputStreamReader(System.in));
         String EXIT = "EXIT";
-
         ThreadMsg t = null;
+        ThreadUpload tUpload = null;
+        String[] splitStr = null;
 
         try{
             inicial = new InfoServer(args[0], Integer.parseInt(args[1]),-1);
@@ -51,7 +52,7 @@ public class Main {
                 System.out.println("A enviar pedido de conexao para o servidor: <" + inicial.getAddr() + ":" + inicial.getPortUdp() + ">");
 
                 socketUdp.send(packet);
-				socketUdp.setSoTimeout(5000); // 5 sec
+                socketUdp.setSoTimeout(5000); // 5 sec
                 packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
 
                 socketUdp.receive(packet);
@@ -70,7 +71,7 @@ public class Main {
 
             socketTcp = new Socket(inicial.getAddr(), inicial.getPortTcp());
 
-            t = new ThreadMsg(socketTcp);
+            t = new ThreadMsg(socketTcp, lista, ServerRequest, socketUdp);
             t.start();
 
             while(true){
@@ -81,8 +82,16 @@ public class Main {
                     break;
                 }
 
+                if(teclado.contains("/fich")){
+                    splitStr = teclado.trim().split("\\s+");
+                    if(splitStr.length != 2){
+                        System.out.println("Erro no numero de argumentos");
+                        continue;
+                    }
+                }
+
                 msgEnvio = new Msg("Joao", teclado);
-				synchronized (socketTcp) {
+                synchronized (socketTcp) {
                     try {
                         out = new ObjectOutputStream(socketTcp.getOutputStream());
                     } catch (SocketException e) {
@@ -94,7 +103,7 @@ public class Main {
                         }
                     }
                 }
-                out.writeUnshared(msgEnvio);
+                out.writeObject(msgEnvio);
                 out.flush();
             }
         }catch (SocketTimeoutException e) {
@@ -119,5 +128,4 @@ public class Main {
             }catch(IOException e){}
         }
     }
-
 }

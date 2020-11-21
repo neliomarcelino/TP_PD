@@ -7,10 +7,17 @@ import java.net.Socket;
 public class ThreadMsg extends Thread{
     private Socket socketTcp;
     protected boolean running;
+    private List<InfoServer> lista;
+    private String serverRequest;
+    private DatagramSocket socketUdp;
+    public static final int MAX_SIZE = 10000;
 
-    ThreadMsg(Socket socketTcp){
+    ThreadMsg(Socket socketTcp, List<InfoServer> lista, String serverRequest, DatagramSocket socketUdp){
         this.socketTcp = socketTcp;
         running = true;
+        this.lista = lista;
+        this.serverRequest = serverRequest;
+        this.socketUdp = socketUdp;
     }
 
     @Override
@@ -98,4 +105,5 @@ public class ThreadMsg extends Thread{
 
     public void terminate(){ running = false; }
 
+    public Socket getSocketTcp(){ return socketTcp; }
 }
