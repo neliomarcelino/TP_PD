@@ -28,6 +28,7 @@ public class Main {
         MsgServer resposta;
         Msg msgEnvio;
         String teclado;
+		ServerSocket socket = null;
 
         BufferedReader inTeclado = new BufferedReader(new InputStreamReader(System.in));
         String EXIT = "EXIT";

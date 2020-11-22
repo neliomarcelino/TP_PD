@@ -32,6 +32,7 @@ public class ThreadTCP extends Thread {
         Msg mensagem;
         DatagramPacket packet = null;
         DatagramSocket socketUdp = null;
+		ThreadDownload t = null;
         try {
             while(running) {
                 in = new ObjectInputStream(socketClient.getInputStream());
