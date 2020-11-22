@@ -8,8 +8,7 @@ import java.net.Socket;
 import java.sql.Statement;
 import java.util.List;
 
-public class ThreadMulticast extends Thread{
- {
+public class ThreadMulticast extends Thread {
     public static int MAX_SIZE = 1000000;
     static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
 

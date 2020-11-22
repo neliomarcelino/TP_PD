@@ -39,6 +39,14 @@ public class ThreadTCP extends Thread {
 
                 if (obj instanceof Msg) {
                     mensagem = (Msg) obj;
+					
+					// Tratamento de ficheiros
+                    if(mensagem.getConteudo().contains("/fich")){
+                        String[] splitStr = mensagem.getConteudo().trim().split("\\s+");
+                        (t = new ThreadDownload(socketClient.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), splitStr[1])).start();
+                        mensagem = new Msg(mensagem.getUsername(), splitStr[0]+" "+splitStr[1]);
+                    }
+					
                     socketUdp = new DatagramSocket();
                     bOut = new ByteArrayOutputStream();
                     out = new ObjectOutputStream(bOut);

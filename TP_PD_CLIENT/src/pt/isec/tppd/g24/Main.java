@@ -34,7 +34,8 @@ public class Main {
         ThreadMsg t = null;
         ThreadUpload tUpload = null;
         String[] splitStr = null;
-
+		File f;
+		
         try{
             inicial = new InfoServer(args[0], Integer.parseInt(args[1]),-1);
             socketUdp = new DatagramSocket();
@@ -88,9 +89,16 @@ public class Main {
                         System.out.println("Erro no numero de argumentos");
                         continue;
                     }
+                    f = new File(System.getProperty("user.dir") + File.separator + splitStr[1]);
+                    if(!f.isFile()){
+                        System.out.println("Ficheiro nao esta na directoria:" + System.getProperty("user.dir"));
+                        continue;
+                    }
+                    socket = new ServerSocket(0);
+                    msgEnvio = new Msg("Joao", teclado + " " + socket.getLocalPort());
+                }else {
+                    msgEnvio = new Msg("Joao", teclado);
                 }
-
-                msgEnvio = new Msg("Joao", teclado);
                 synchronized (socketTcp) {
                     try {
                         out = new ObjectOutputStream(socketTcp.getOutputStream());
@@ -105,6 +113,10 @@ public class Main {
                 }
                 out.writeObject(msgEnvio);
                 out.flush();
+
+                if(teclado.contains("/fich")) {
+                    (tUpload = new ThreadUpload(socket, splitStr[1])).start();
+                }
             }
         }catch (SocketTimeoutException e) {
             System.out.println("Nao recebi nenhuma resposta (Servidor down?)\n\t"+e);

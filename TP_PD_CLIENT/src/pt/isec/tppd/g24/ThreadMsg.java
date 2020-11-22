@@ -1,8 +1,8 @@
 package pt.isec.tppd.g24;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 public class ThreadMsg extends Thread{
     private Socket socketTcp;
