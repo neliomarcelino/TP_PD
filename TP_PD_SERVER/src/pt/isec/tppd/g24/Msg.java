@@ -1,6 +1,8 @@
 package pt.isec.tppd.g24;
 
 import java.io.Serializable;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 public class Msg implements Serializable {
     public static final long serialVersionUID = 10L;

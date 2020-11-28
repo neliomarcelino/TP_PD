@@ -25,6 +25,7 @@ public class ThreadDownload extends Thread{
         InputStream in;
         FileOutputStream localFileOutputStream = null;
         //int contador = 0;
+        ObjectOutputStream out;
 
         localDirectory = new File(System.getProperty("user.dir"));
         try{
@@ -59,6 +60,7 @@ public class ThreadDownload extends Thread{
                     localFileOutputStream.write(buffer, 0, nbytes);
 
                 System.out.println("Transferencia concluida.");
+               
             }catch(UnknownHostException e){
                 System.out.println("Destino desconhecido:\n\t"+e);
             }catch(NumberFormatException e){
@@ -81,6 +83,7 @@ public class ThreadDownload extends Thread{
                     localFileOutputStream.close();
                 }catch(IOException e){}
             }
+
         }
     }
 }

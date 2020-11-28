@@ -1,25 +1,21 @@
 package pt.isec.tppd.g24;
 
+import java.io.*;
+import java.net.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.Socket;
-
-public class ThreadTCP extends Thread {
+public class ThreadTcp extends Thread {
+    public static final int MAX_SIZE = 5120;
     private Socket socketClient;
     private InetAddress group;
     private int portMulti;
     protected boolean running;
+    private InfoServer esteServer;
 
-    ThreadTCP(Socket socketClient, InetAddress group, int portMulti) {
+    ThreadTcp(Socket socketClient, InetAddress group, int portMulti, InfoServer esteServer) {
         this.socketClient = socketClient;
         this.portMulti = portMulti;
         this.group = group;
+        this.esteServer = esteServer;
         running = true;
     }
 
@@ -45,9 +41,10 @@ public class ThreadTCP extends Thread {
                     if(mensagem.getConteudo().contains("/fich")){
                         String[] splitStr = mensagem.getConteudo().trim().split("\\s+");
                         (t = new ThreadDownload(socketClient.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), splitStr[1])).start();
-                        mensagem = new Msg(mensagem.getUsername(), splitStr[0]+" "+splitStr[1]);
+                        mensagem = new Msg(mensagem.getUsername(), splitStr[0]+" "+splitStr[1] + " "+ esteServer);
+						t.join();
                     }
-					
+
                     socketUdp = new DatagramSocket();
                     bOut = new ByteArrayOutputStream();
                     out = new ObjectOutputStream(bOut);
@@ -62,6 +59,8 @@ public class ThreadTCP extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }

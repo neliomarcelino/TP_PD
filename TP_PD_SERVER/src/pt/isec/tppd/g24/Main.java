@@ -4,12 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.*;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.sql.*;
 
 public class Main {
     static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
@@ -36,7 +33,7 @@ public class Main {
         List<InfoServer> listaServers = new ArrayList<>();
         InfoServer esteServer = null;
         int portUdp, portTcp, portMulti = 5432;
-        ThreadUDP tUDP;
+        ThreadUdp tUdp;
         ThreadMulticast tMulti;
         ThreadPing tPing;
         InetAddress group;
@@ -52,6 +49,11 @@ public class Main {
 
 
         try{
+            /*
+            String localDirectory = System.getProperty("user.dir");
+            System.out.println(localDirectory);
+            */
+
             //DATABASE
             Class.forName(JDBC_DRIVER);
 
@@ -75,14 +77,12 @@ public class Main {
 
             stmt.executeUpdate(sql);
 
-
             group = InetAddress.getByName("230.30.30.30");
             portUdp = Integer.parseInt(args[0]);
             portTcp = Integer.parseInt(args[1]);
             socketUdp = new DatagramSocket(portUdp);
             socketTcp = new ServerSocket(portTcp);
             socketMulti = new MulticastSocket(portMulti);
-
             try{
                 socketMulti.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName("lo")));
             }catch (SocketException | NullPointerException | UnknownHostException | SecurityException ex){
@@ -94,7 +94,7 @@ public class Main {
             if(addr.equals("0.0.0.0"))
                 addr = "127.0.0.1";
             esteServer = new InfoServer(addr, portUdp, portTcp);
-            (tUDP = new ThreadUDP(esteServer, listaServers, socketUdp)).start();
+            (tUdp = new ThreadUdp(esteServer, listaServers, socketUdp)).start();
             (tMulti = new ThreadMulticast(socketMulti, listaServers, esteServer, stmt, listaDeClientes)).start();
             (tPing = new ThreadPing(30, group, portMulti, listaServers, socketUdp, esteServer)).start();
 
@@ -104,14 +104,13 @@ public class Main {
                 socketToClient = socketTcp.accept();
                 esteServer.addNClientes();
                 enviaEsteServer(esteServer, socketMulti, group, portMulti);
+
                 synchronized (listaDeClientes) {
                     listaDeClientes.add(socketToClient);
                 }
-                new ThreadTCP(socketToClient, group, portMulti).start();
+                new ThreadTcp(socketToClient, group, portMulti, esteServer).start();
             }
-        }
-
-        catch(NumberFormatException e){
+        }catch(NumberFormatException e){
             System.out.println("O porto de escuta deve ser um inteiro positivo.");
         } catch (UnknownHostException e) {
             e.printStackTrace();

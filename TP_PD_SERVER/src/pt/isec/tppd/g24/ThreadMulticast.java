@@ -1,12 +1,10 @@
 package pt.isec.tppd.g24;
 
 import java.io.*;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.Socket;
+import java.net.*;
 import java.sql.Statement;
 import java.util.List;
+import java.sql.*;
 
 public class ThreadMulticast extends Thread {
     public static int MAX_SIZE = 1000000;
@@ -43,6 +41,8 @@ public class ThreadMulticast extends Thread {
         String sql = null;
         boolean cria;
         int i = 2;
+        DatagramSocket socketFich;
+        ThreadDownload t;
 
         if(s == null || !running){ return; }
 
@@ -61,6 +61,27 @@ public class ThreadMulticast extends Thread {
 
                         msg = (Msg)obj;
 
+                        if(msg.getConteudo().contains("/fich")) {
+                            String[] splitStr = msg.getConteudo().trim().split("\\s+");
+                            if(!(esteServer.getAddr().equals(splitStr[2]) && esteServer.getPortUdp() == Integer.parseInt(splitStr[3]) && esteServer.getPortTcp() == Integer.parseInt(splitStr[4]))){
+                                socketFich = new DatagramSocket();
+                                buff = new ByteArrayOutputStream();
+                                out = new ObjectOutputStream(buff);
+                                out.writeUnshared("/fich " + splitStr[1]);
+                                out.flush();
+
+                                pkt = new DatagramPacket(buff.toByteArray(), buff.size(), InetAddress.getByName(splitStr[2]), Integer.parseInt(splitStr[3]));
+                                socketFich.send(pkt);
+
+                                pkt = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
+                                socketFich.receive(pkt);
+                                in = new ObjectInputStream(new ByteArrayInputStream(pkt.getData(), 0, pkt.getLength()));
+
+                                (t = new ThreadDownload(splitStr[2], (int) in.readObject(), splitStr[1])).start();
+                            }
+							msg = new Msg(msg.getUsername(), splitStr[0] + " " + splitStr[1]);
+                        }
+
                         System.out.println(msg.getUsername() + ":" + msg.getConteudo());
 
                         //Guardar msg na Database
@@ -73,15 +94,15 @@ public class ThreadMulticast extends Thread {
                         //Enviar aos clientes a msg
 
                         synchronized (listaDeClientes) {
-                            for (Socket p : listaDeClientes) {
-                                out = new ObjectOutputStream(p.getOutputStream());
-                                out.writeUnshared(msg);
-                                out.flush();
+                            if (listaDeClientes.size() != 0) {
+                                for (Socket p : listaDeClientes) {
+                                    out = new ObjectOutputStream(p.getOutputStream());
+                                    out.writeUnshared(msg);
+                                    out.flush();
+                                }
                             }
                         }
-
                     }else if(obj instanceof InfoServer){
-
                         infoServer = (InfoServer)obj;
                         synchronized (listaServers) {
                             for(InfoServer p: listaServers){

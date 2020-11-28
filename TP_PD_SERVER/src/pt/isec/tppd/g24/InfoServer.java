@@ -1,6 +1,7 @@
 package pt.isec.tppd.g24;
 
 import java.io.Serializable;
+import java.net.InetAddress;
 
 public class InfoServer implements Serializable, Comparable<InfoServer> {
     public static final long serialVersionUID = 10L;
@@ -25,4 +26,6 @@ public class InfoServer implements Serializable, Comparable<InfoServer> {
 
     @Override
     public int compareTo(InfoServer o) {return this.nClientes - o.getNClientes();}
+	@Override
+    public String toString(){ return addr + " " + portUdp + " " + portTcp; }
 }

@@ -4,18 +4,19 @@ package pt.isec.tppd.g24;
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.ServerSocket;
 import java.net.SocketException;
 import java.util.Collections;
 import java.util.List;
 
-public class ThreadUDP extends Thread{
+public class ThreadUdp extends Thread{
     protected boolean running;
     private List<InfoServer> listaServers;
     public static final int BUFSIZE = 10000;
     private InfoServer esteServer;
     private DatagramSocket socket;
 
-    public ThreadUDP(InfoServer esteServer, List<InfoServer> listaServers, DatagramSocket socket) {
+    public ThreadUdp(InfoServer esteServer, List<InfoServer> listaServers, DatagramSocket socket) {
         this.esteServer = esteServer;
         this.listaServers = listaServers;
         running = true;
@@ -31,12 +32,13 @@ public class ThreadUDP extends Thread{
         ObjectOutputStream out;
         ObjectInputStream in;
 
-        String receivedMsg;
+        String receivedMsg, fich;
         MsgServer msgEnviar = null;
         Object obj;
         InfoServer regisServer;
         int carga;
         boolean menosCarga;
+        ThreadUpload t;
 
         try {
             System.out.println("UDP Thread iniciado...");
@@ -60,6 +62,20 @@ public class ThreadUDP extends Thread{
                     System.out.println("Recebi o servidor " + regisServer.getAddr() + ":" + regisServer.getPortUdp() + ":" + regisServer.getPortTcp() + " Clientes:" + regisServer.getNClientes());
                 }else if(obj instanceof String) {
                     receivedMsg = (String) obj;
+                    if (receivedMsg.contains("/fich")) {
+                        String[] splitStr = receivedMsg.trim().split("\\s+");
+                        ServerSocket socketfich = new ServerSocket(0);
+                        (t = new ThreadUpload(socketfich, splitStr[1])).start();
+
+                        bOut = new ByteArrayOutputStream();
+                        out = new ObjectOutputStream(bOut);
+                        out.writeUnshared(socketfich.getLocalPort());
+                        out.flush();
+                        receivePacket.setData(bOut.toByteArray());
+                        receivePacket.setLength(bOut.size());
+                        socket.send(receivePacket);
+                        continue;
+                    }
                     if (!receivedMsg.equalsIgnoreCase(ServerRequest))
                         continue;
                     carga = 0;
@@ -80,15 +96,15 @@ public class ThreadUDP extends Thread{
                             msgEnviar = new MsgServer(false, listaServers);
                         }else{
                             for(InfoServer p : listaServers){
-                                if (p.getPortTcp() == esteServer.getPortTcp() && p.getPortUdp() == esteServer.getPortUdp() && p.getAddr().equals(esteServer.getAddr()) && p.getNClientes() == esteServer.getNClientes()) {
-                                    int index = listaServers.indexOf(p);
-                                    if (index != 0) {
-                                        InfoServer aux = listaServers.get(0);
-                                        listaServers.set(0, p);
-                                        listaServers.set(index, aux);
-                                    }
-                                    break;
-                                }
+                              if (p.getPortTcp() == esteServer.getPortTcp() && p.getPortUdp() == esteServer.getPortUdp() && p.getAddr().equals(esteServer.getAddr()) && p.getNClientes() == esteServer.getNClientes()) {
+                                  int index = listaServers.indexOf(p);
+                                  if (index != 0) {
+                                      InfoServer aux = listaServers.get(0);
+                                      listaServers.set(0, p);
+                                      listaServers.set(index, aux);
+                                  }
+                                break;
+                              }
                             }
                             msgEnviar = new MsgServer(true, listaServers);
                         }
@@ -111,5 +127,6 @@ public class ThreadUDP extends Thread{
             System.out.println("Mensagem recebida de tipo inesperado! " + e);
         }
     }
+
     public void terminate(){ running = false; }
 }
