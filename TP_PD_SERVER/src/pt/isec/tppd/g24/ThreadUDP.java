@@ -111,22 +111,30 @@ public class ThreadUDP extends Thread {
                   
                } else if (receivedMsg.contains("LOGIN")) {
                   String[] user = receivedMsg.split(":", 3);
-                  System.out.println("Utilizador " + user[1] + " a fazer login com password: " + user[1]);
+                  System.out.println("Utilizador " + user[1] + " a fazer login com password: " + user[2]);
                   
                   bOut = new ByteArrayOutputStream();
                   out = new ObjectOutputStream(bOut);
                   
                   ResultSet rs = stmt.executeQuery("SELECT USERNAME, PASSWORD FROM USERS;");
+                  boolean conf = false;
                   while (rs.next()) {
                      if (rs.getString("USERNAME").equalsIgnoreCase(user[1]) && rs.getString("PASSWORD").equalsIgnoreCase(user[2])) {
-                        out.writeUnshared("OK");
-                        System.out.println("Login efetuado com sucesso");
+                        conf = true;
                         break;
                      } else {
-                        System.out.println("Login sem sucesso. username ou password incorreto");
-                        out.writeUnshared("NOT OK");
+                        conf = false;
                      }
                   }
+                  
+                  if(conf) {
+                     out.writeUnshared("OK");
+                     System.out.println("Login efetuado com sucesso");
+                  } else {
+                     System.out.println("Login sem sucesso. username ou password incorreto");
+                     out.writeUnshared("NOT OK");
+                  }
+                  
                   out.flush();
                   DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(),
                                                              receivePacket.getAddress(), receivePacket.getPort());
