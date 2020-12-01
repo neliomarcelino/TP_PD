@@ -33,7 +33,7 @@ public class Main {
         List<InfoServer> listaServers = new ArrayList<>();
         InfoServer esteServer = null;
         int portUdp, portTcp, portMulti = 5432;
-        ThreadUdp tUdp;
+        ThreadUDP tUdp;
         ThreadMulticast tMulti;
         ThreadPing tPing;
         InetAddress group;
@@ -62,11 +62,10 @@ public class Main {
             stmt = conn.createStatement();
 
             sql = "CREATE TABLE IF NOT EXISTS USERS" +
-                    "(id INT NOT NULL AUTO_INCREMENT, " +
-                    " first VARCHAR(255), " +
-                    " last VARCHAR(255), " +
-                    " age INTEGER, " +
-                    " PRIMARY KEY ( id ))";
+                    "(username VARCHAR(255) NOT NULL, " +
+                    " name VARCHAR(255), " +
+                    " password VARCHAR(255), " +
+                    " PRIMARY KEY ( username ))";
 
             stmt.executeUpdate(sql);
 
@@ -94,7 +93,7 @@ public class Main {
             if(addr.equals("0.0.0.0"))
                 addr = "127.0.0.1";
             esteServer = new InfoServer(addr, portUdp, portTcp);
-            (tUdp = new ThreadUdp(esteServer, listaServers, socketUdp)).start();
+            (tUdp = new ThreadUDP(esteServer, listaServers, socketUdp, stmt)).start();
             (tMulti = new ThreadMulticast(socketMulti, listaServers, esteServer, stmt, listaDeClientes)).start();
             (tPing = new ThreadPing(30, group, portMulti, listaServers, socketUdp, esteServer)).start();
 
@@ -108,7 +107,7 @@ public class Main {
                 synchronized (listaDeClientes) {
                     listaDeClientes.add(socketToClient);
                 }
-                new ThreadTcp(socketToClient, group, portMulti, esteServer).start();
+                new ThreadTCP(socketToClient, group, portMulti, esteServer).start();
             }
         }catch(NumberFormatException e){
             System.out.println("O porto de escuta deve ser um inteiro positivo.");

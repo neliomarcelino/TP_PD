@@ -3,7 +3,7 @@ package pt.isec.tppd.g24;
 import java.io.*;
 import java.net.*;
 
-public class ThreadTcp extends Thread {
+public class ThreadTCP extends Thread {
     public static final int MAX_SIZE = 5120;
     private Socket socketClient;
     private InetAddress group;
@@ -11,7 +11,7 @@ public class ThreadTcp extends Thread {
     protected boolean running;
     private InfoServer esteServer;
 
-    ThreadTcp(Socket socketClient, InetAddress group, int portMulti, InfoServer esteServer) {
+    ThreadTCP(Socket socketClient, InetAddress group, int portMulti, InfoServer esteServer) {
         this.socketClient = socketClient;
         this.portMulti = portMulti;
         this.group = group;
