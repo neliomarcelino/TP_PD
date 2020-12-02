@@ -11,19 +11,20 @@ import java.sql.*;
 public class Main {
    static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
    
-   public static void enviaEsteServer(InfoServer esteServer, MulticastSocket socketMulti, InetAddress group, int portMulti) throws IOException {
-      ByteArrayOutputStream buff;
-      ObjectOutputStream out;
-      DatagramPacket dgram;
-      
-      buff = new ByteArrayOutputStream();
-      out = new ObjectOutputStream(buff);
-      out.writeUnshared(esteServer);
-      out.flush();
-      out.close();
-      dgram = new DatagramPacket(buff.toByteArray(), buff.size(), group, portMulti);
-      socketMulti.send(dgram);
-   }
+   public static void enviaEsteServer(InfoServer esteServer, InetAddress group, int portMulti) throws IOException {
+        ByteArrayOutputStream buff;
+        ObjectOutputStream out;
+        DatagramSocket socket;
+        DatagramPacket dgram;
+
+        socket = new DatagramSocket();
+        buff = new ByteArrayOutputStream();
+        out = new ObjectOutputStream(buff);
+        out.writeUnshared(esteServer);
+        out.flush(); out.close();
+        dgram = new DatagramPacket(buff.toByteArray(), buff.size(), group, portMulti);
+        socket.send(dgram);
+    }
    
    public static void main(String[] args) {
       if (args.length != 3) {
@@ -107,17 +108,17 @@ public class Main {
          (tMulti = new ThreadMulticast(socketMulti, listaServers, esteServer, stmt, listaDeClientes)).start();
          (tPing = new ThreadPing(30, group, portMulti, listaServers, socketUdp, esteServer)).start();
          
-         enviaEsteServer(esteServer, socketMulti, group, portMulti);
+         enviaEsteServer(esteServer, group, portMulti);
          
          while (true) {
             socketToClient = socketTcp.accept();
             esteServer.addNClientes();
-            enviaEsteServer(esteServer, socketMulti, group, portMulti);
+            enviaEsteServer(esteServer, group, portMulti);
             
             synchronized (listaDeClientes) {
                listaDeClientes.add(socketToClient);
             }
-            new ThreadTCP(socketToClient, group, portMulti, esteServer).start();
+            new ThreadTCP(socketToClient, group, portMulti, esteServer, listaDeClientes).start();
          }
       } catch (NumberFormatException e) {
          System.out.println("O porto de escuta deve ser um inteiro positivo.");

@@ -2,6 +2,7 @@ package pt.isec.tppd.g24;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 public class ThreadTCP extends Thread {
     public static final int MAX_SIZE = 5120;
@@ -10,13 +11,15 @@ public class ThreadTCP extends Thread {
     private int portMulti;
     protected boolean running;
     private InfoServer esteServer;
+	private List<Socket> listaDeClientes;
 
-    ThreadTCP(Socket socketClient, InetAddress group, int portMulti, InfoServer esteServer) {
+    ThreadTCP(Socket socketClient, InetAddress group, int portMulti, InfoServer esteServer, List<Socket> listaDeClientes) {
         this.socketClient = socketClient;
         this.portMulti = portMulti;
         this.group = group;
         this.esteServer = esteServer;
         running = true;
+        this.listaDeClientes = listaDeClientes;
     }
 
     @Override
@@ -56,7 +59,18 @@ public class ThreadTCP extends Thread {
                     socketUdp.send(packet);
                 }
             }
-        } catch (IOException e) {
+        } catch (SocketException e) {
+            synchronized (listaDeClientes){
+                listaDeClientes.remove(socketClient);
+            }
+            esteServer.decNClientes();
+            try {
+                Main.enviaEsteServer(esteServer, group, portMulti);
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+            System.out.println("Menos um cliente ligado!");
+        }catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
