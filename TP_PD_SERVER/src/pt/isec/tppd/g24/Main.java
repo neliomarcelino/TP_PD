@@ -75,15 +75,15 @@ public class Main {
                                     " PRIMARY KEY ( username ))");
          
          stmt.executeUpdate("CREATE TABLE IF NOT EXISTS mensagens (" +
-                                    " username TEXT NOT NULL UNIQUE, " +
-                                    " conteudo TEXT not NULL, " +
+                                    " username VARCHAR(255)  NOT NULL UNIQUE, " +
+                                    " conteudo VARCHAR(255)  not NULL, " +
                                     " timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP );");
          
          stmt.executeUpdate("CREATE TABLE IF NOT EXISTS canais (" +
-                                    " nome TEXT NOT NULL UNIQUE, " +
-                                    " descricao TEXT NOT NULL, " +
-                                    " password TEXT NOT NULL, " +
-                                    " admin TEXT NOT NULL);");
+                                    " nome VARCHAR(255)  NOT NULL UNIQUE, " +
+                                    " descricao VARCHAR(255)  NOT NULL, " +
+                                    " password VARCHAR(255)  NOT NULL, " +
+                                    " admin VARCHAR(255)  NOT NULL);");
          
          System.out.println("Using database '" + servername + "' on '" + dbUrl + "'");
          
