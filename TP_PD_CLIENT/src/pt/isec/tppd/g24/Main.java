@@ -108,10 +108,10 @@ public class Main {
                   socketUdp.receive(packet);
                   bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                   in = new ObjectInputStream(bIn);
-                  
-                  if (((String) in.readObject()).equalsIgnoreCase("OK")) {
+                  String res = ((String) in.readObject());
+                  if (res.equalsIgnoreCase("OK")) {
                      conf = true;
-                  } else if (((String) in.readObject()).equalsIgnoreCase("NOT OK")) {
+                  } else if (res.equalsIgnoreCase("NOT OK")) {
                      conf = false;
                      System.out.println("Login invalido");
                   } else {
@@ -149,9 +149,10 @@ public class Main {
                   bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                   in = new ObjectInputStream(bIn);
                   
-                  if (((String) in.readObject()).equalsIgnoreCase("OK"))
+                  String res = (String) in.readObject();
+                  if (res.equalsIgnoreCase("OK"))
                      conf = true;
-                  else if (((String) in.readObject()).equalsIgnoreCase("USERNAME IN USE")) {
+                  else if (res.equalsIgnoreCase("USERNAME IN USE")) {
                      conf = false;
                      System.out.println("Erro ao criar a conta. Username ja utilizado.");
                   } else {
@@ -218,12 +219,13 @@ public class Main {
                bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                in = new ObjectInputStream(bIn);
                
-               if (((String) in.readObject()).equalsIgnoreCase("OK")) {
+               String res = (String) in.readObject();
+               if (res.equalsIgnoreCase("OK")) {
                   canal = splitStr[1];
                   System.out.println("Conectado ao canal '" + canal + "'");
-               } else if(((String) in.readObject()).equalsIgnoreCase("INVALID PASSWORD")) {
+               } else if(res.equalsIgnoreCase("INVALID PASSWORD")) {
                   System.out.println("Password invalida!");
-               } else if (((String) in.readObject()).equalsIgnoreCase("NOT OK")) {
+               } else if (res.equalsIgnoreCase("NOT OK")) {
                   System.out.println("Erro!");
                }
                continue;
@@ -262,12 +264,13 @@ public class Main {
                socketUdp.receive(packet);
                bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                in = new ObjectInputStream(bIn);
-               if (((String) in.readObject()).equalsIgnoreCase("OK")) {
+               String res = (String) in.readObject();
+               if (res.equalsIgnoreCase("OK")) {
                   canal = nome;
                   System.out.println("Canal '" + canal + "' criado com sucesso!");
-               } else if (((String) in.readObject()).equalsIgnoreCase("NAME IN USE")) {
+               } else if (res.equalsIgnoreCase("NAME IN USE")) {
                   System.out.println("Nao foi possivel criar o canal. Ja existe um canal com nome '" + splitStr[1] + "'");
-               } else if (((String) in.readObject()).equalsIgnoreCase("NOT OK")) {
+               } else if (res.equalsIgnoreCase("NOT OK")) {
                   System.out.println("Erro! Canal ou password errada");
                }
                continue;
@@ -297,10 +300,11 @@ public class Main {
                bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                in = new ObjectInputStream(bIn);
    
-               if (((String) in.readObject()).equalsIgnoreCase("OK")) {
+               String res = (String) in.readObject();
+               if (res.equalsIgnoreCase("OK")) {
                   canal = splitStr[1];
                   System.out.println("Conectado ao canal '" + canal + "'");
-               } else if (((String) in.readObject()).equalsIgnoreCase("NOT OK")) {
+               } else if (res.equalsIgnoreCase("NOT OK")) {
                   System.out.println("Erro! Canal ou password errada");
                }
    
@@ -329,9 +333,10 @@ public class Main {
                bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                in = new ObjectInputStream(bIn);
    
-               if (((String) in.readObject()).equalsIgnoreCase("OK")) {
+               res = (String) in.readObject();
+               if (res.equalsIgnoreCase("OK")) {
                   System.out.println("Canal '" + canal + "' editado com sucesso!");
-               } else if (((String) in.readObject()).equalsIgnoreCase("NOT OK")) {
+               } else if (res.equalsIgnoreCase("NOT OK")) {
                   System.out.println("Erro! Nao foi possivel editar o canal");
                }
    
@@ -363,11 +368,13 @@ public class Main {
                socketUdp.receive(packet);
                bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                in = new ObjectInputStream(bIn);
-               if (((String) in.readObject()).equalsIgnoreCase("OK")) {
+               
+               String res = (String) in.readObject();
+               if (res.equalsIgnoreCase("OK")) {
                   System.out.println("Canal '" + canal + "' eliminado com sucesso!");
-               } else if (((String) in.readObject()).equalsIgnoreCase("NO CHANNEL WITH NAME ")) {
+               } else if (res.equalsIgnoreCase("NO CHANNEL WITH NAME ")) {
                   System.out.println("Nao existe nenhum canal com o nome de '" + nome + "'");
-               } else if (((String) in.readObject()).equalsIgnoreCase("NOT OK")) {
+               } else if (res.equalsIgnoreCase("NOT OK")) {
                   System.out.println("Erro! Canal ou password errada");
                }
                continue;
@@ -384,17 +391,18 @@ public class Main {
                socketUdp.send(packet);
                socketUdp.setSoTimeout(5000); // 5 sec
    
-               packet = new DatagramPacket(new byte[10000], 10000);
+               packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
                socketUdp.receive(packet);
                bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                in = new ObjectInputStream(bIn);
                
-               if (((String) in.readObject()).equalsIgnoreCase("NOT OK")) {
+               String res = (String) in.readObject();
+               if (res.equalsIgnoreCase("NOT OK")) {
                   System.out.println("Nao foi possivel listar os canais!");
-               } else if (((String) in.readObject()).equalsIgnoreCase("NO CHANNELS")) {
+               } else if (res.equalsIgnoreCase("NO CHANNELS")) {
                   System.out.println("Nao existem canais criados.");
                } else {
-                  splitStr = ((String) in.readObject()).trim().split(":");
+                  splitStr = (res.trim().split(":"));
                   System.out.println("Lista dos canais:");
                   for(int i = 0; i < splitStr.length;) {
                      System.out.println("Nome: '" + splitStr[i++] + "'\tAdmin: '" + splitStr[i++] + "'");

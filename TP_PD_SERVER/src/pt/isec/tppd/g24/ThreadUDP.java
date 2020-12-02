@@ -142,7 +142,7 @@ public class ThreadUDP extends Thread {
                         out.writeUnshared("OK");
                         System.out.println("Utilizador '" + nome + "' efetuou login com a password: '" + password + "' com sucesso!");
                      } else {
-                        System.out.println("Utilizador '" + password + "' efetuou login com password: '" + password + "' sem sucesso");
+                        System.out.println("Utilizador '" + nome + "' efetuou login com a password: '" + password + "' sem sucesso");
                         out.writeUnshared("NOT OK");
                      }
                   }
