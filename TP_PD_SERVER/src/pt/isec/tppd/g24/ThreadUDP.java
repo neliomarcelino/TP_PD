@@ -81,28 +81,35 @@ public class ThreadUDP extends Thread {
                   continue;
                   
                } else if (receivedMsg.contains("REGISTA")) {
-                  String[] user = receivedMsg.trim().split(":", 4);
-                  System.out.println("A registar: " + user[1] + ", " + user[2] + ", " + user[3]);
+                  String[] splitStr = receivedMsg.trim().split(":");
                   
                   bOut = new ByteArrayOutputStream();
                   out = new ObjectOutputStream(bOut);
                   
-                  ResultSet rs = stmt.executeQuery("SELECT USERNAME FROM USERS;");
-                  boolean usernameInUse = false;
-                  
-                  while (rs.next()) {
-                     if (rs.getString("USERNAME").equalsIgnoreCase(user[1])) {
-                        usernameInUse = true;
+                  if (splitStr.length != 4) {
+                     out.writeUnshared("NOT OK");
+                  } else {
+                     String username = splitStr[1];
+                     String name = splitStr[2];
+                     String password = splitStr[3];
+                     ResultSet rs = stmt.executeQuery("SELECT USERNAME FROM USERS;");
+                     boolean usernameInUse = false;
+                     
+                     while (rs.next()) {
+                        if (rs.getString("USERNAME").equalsIgnoreCase(username)) {
+                           usernameInUse = true;
+                        }
+                     }
+                     if (usernameInUse) {
+                        out.writeUnshared("USERNAME IN USE");
+                        System.out.println("Registo efetuado sem sucesso! Username '" + username + "' ja em uso");
+                     } else {
+                        if (stmt.executeUpdate("INSERT INTO USERS VALUES ('" + username + "', '" + name + "', '" + password + "');") >= 1)
+                           out.writeUnshared("OK");
+                        System.out.println("Registo de utilizador ('" + username + "', '" + name + "', '" + password + "') efetuado com sucesso!");
                      }
                   }
-                  if(usernameInUse) {
-                     out.writeUnshared("USERNAME IN USE");
-                     System.out.println("Registo efetuado sem sucesso! Username '" + user[1] + "' ja em uso");
-                  } else {
-                     if (stmt.executeUpdate("INSERT INTO USERS VALUES ('" + user[1] + "', '" + user[2] + "', '" + user[3] + "');") >= 1)
-                        out.writeUnshared("OK");
-                     System.out.println("Registo efetuado com sucesso!");
-                  }
+                  
                   out.flush();
                   DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(),
                                                              receivePacket.getAddress(), receivePacket.getPort());
@@ -110,28 +117,136 @@ public class ThreadUDP extends Thread {
                   socket.send(packet);
                   
                } else if (receivedMsg.contains("LOGIN")) {
-                  String[] user = receivedMsg.split(":", 3);
-                  System.out.println("Utilizador " + user[1] + " a fazer login com password: " + user[2]);
+                  String[] splitStr = receivedMsg.split(":");
                   
                   bOut = new ByteArrayOutputStream();
                   out = new ObjectOutputStream(bOut);
                   
-                  ResultSet rs = stmt.executeQuery("SELECT USERNAME, PASSWORD FROM USERS;");
-                  boolean conf = false;
-                  while (rs.next()) {
-                     if (rs.getString("USERNAME").equalsIgnoreCase(user[1]) && rs.getString("PASSWORD").equalsIgnoreCase(user[2])) {
-                        conf = true;
-                        break;
+                  if (splitStr.length != 3) {
+                     out.writeUnshared("NOT OK");
+                  } else {
+                     String nome = splitStr[1];
+                     String password = splitStr[2];
+                     ResultSet rs = stmt.executeQuery("SELECT USERNAME, PASSWORD FROM USERS;");
+                     boolean conf = false;
+                     while (rs.next()) {
+                        if (rs.getString("USERNAME").equalsIgnoreCase(nome)) {
+                           if (rs.getString("PASSWORD").equalsIgnoreCase(password)) {
+                              conf = true;
+                           }
+                           break;
+                        }
+                     }
+                     
+                     if (conf) {
+                        out.writeUnshared("OK");
+                        System.out.println("Utilizador '" + nome + "' efetuou login com a password: '" + password + "' com sucesso!");
                      } else {
-                        conf = false;
+                        System.out.println("Utilizador '" + password + "' efetuou login com password: '" + password + "' sem sucesso");
+                        out.writeUnshared("NOT OK");
                      }
                   }
                   
-                  if(conf) {
-                     out.writeUnshared("OK");
-                     System.out.println("Login efetuado com sucesso");
+                  out.flush();
+                  DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(),
+                                                             receivePacket.getAddress(), receivePacket.getPort());
+                  DatagramSocket socket = new DatagramSocket();
+                  socket.send(packet);
+                  
+               } else if (receivedMsg.contains("CREATE CHANNEL")) {
+                  String[] splitStr = receivedMsg.trim().split(":");
+                  
+                  bOut = new ByteArrayOutputStream();
+                  out = new ObjectOutputStream(bOut);
+                  
+                  if (splitStr.length != 5) {
+                     out.writeUnshared("NOT OK");
                   } else {
-                     System.out.println("Login sem sucesso. username ou password incorreto");
+                     String nome = splitStr[1];
+                     String descricao = splitStr[2];
+                     String password = splitStr[3];
+                     String admin = splitStr[4];
+                     
+                     ResultSet rs = stmt.executeQuery("SELECT nome FROM canais;");
+                     boolean conf = false;
+                     while (rs.next()) {
+                        if (rs.getString("NOME").equalsIgnoreCase(nome)) {
+                           conf = true;
+                           break;
+                        }
+                     }
+                     if (conf) {
+                        out.writeUnshared("NAME IN USE");
+                     } else {
+                        if (stmt.executeUpdate("INSERT INTO canais VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');") >= 1) {
+                           out.writeUnshared("OK");
+                           System.out.println("Utilizador '" + admin + "' criou o canal '" + nome + "' com sucesso!");
+                        } else {
+                           out.writeUnshared("NOT OK");
+                           
+                        }
+                     }
+                  }
+                  out.flush();
+                  DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(),
+                                                             receivePacket.getAddress(), receivePacket.getPort());
+                  DatagramSocket socket = new DatagramSocket();
+                  socket.send(packet);
+                  
+               }
+               // TODO - NEEDS FIX
+               else if (receivedMsg.contains("EDIT CHANNEL")) {
+                  String[] splitStr = receivedMsg.trim().split(":");
+                  
+                  bOut = new ByteArrayOutputStream();
+                  out = new ObjectOutputStream(bOut);
+                  
+                  if (splitStr.length == 3) {
+                     String nome = splitStr[1];
+                     String user = splitStr[2];
+                     
+                     ResultSet rs = stmt.executeQuery("SELECT nome, admin FROM canais;");
+                     boolean conf = false;
+                     while (rs.next()) {
+                        if (rs.getString("NOME").equalsIgnoreCase(nome)) {
+                           if (rs.getString("ADMIN").equalsIgnoreCase(user)) {
+                              conf = true;
+                           }
+                           break;
+                        }
+                     }
+                     if (conf) {
+                        out.writeUnshared("OK");
+                        
+                     } else {
+                        out.writeUnshared("NOT ADMIN");
+                     }
+                  } else if (splitStr.length == 5) {
+                     String nome = splitStr[1];
+                     String descricao = splitStr[2];
+                     String password = splitStr[3];
+                     String admin = splitStr[4];
+                     
+                     ResultSet rs = stmt.executeQuery("SELECT nome, admin FROM canais;");
+                     boolean conf = false;
+                     while (rs.next()) {
+                        if (rs.getString("NOME").equalsIgnoreCase(nome)) {
+                           conf = true;
+                           break;
+                        }
+                     }
+                     if (conf) {
+                        if (stmt.executeUpdate("UPDATE canais" +
+                                                       "SET descricao = '" + descricao + "', " +
+                                                       "password = '" + password + "', " +
+                                                       "admin = '" + admin + "' " +
+                                                       "WHERE upper(nome) = upper('" + nome + "');") >= 1) {
+                           out.writeUnshared("OK");
+                        }
+                     } else {
+                        out.writeUnshared("NOT OK");
+                     }
+                  } else {
                      out.writeUnshared("NOT OK");
                   }
                   
@@ -140,8 +255,107 @@ public class ThreadUDP extends Thread {
                                                              receivePacket.getAddress(), receivePacket.getPort());
                   DatagramSocket socket = new DatagramSocket();
                   socket.send(packet);
+               } else if (receivedMsg.contains("DELETE CHANNEL")) {
+                  String[] splitStr = receivedMsg.trim().split(":");
+                  
+                  bOut = new ByteArrayOutputStream();
+                  out = new ObjectOutputStream(bOut);
+                  
+                  if (splitStr.length != 3) {
+                     out.writeUnshared("NOT OK");
+                  } else {
+                     String nome = splitStr[1];
+                     String admin = splitStr[2];
+                     
+                     ResultSet rs = stmt.executeQuery("SELECT nome, admin FROM canais;");
+                     boolean conf = false;
+                     while (rs.next()) {
+                        if (rs.getString("NOME").equalsIgnoreCase(nome)) {
+                           if (rs.getString("ADMIN").equalsIgnoreCase(admin)) {
+                              conf = true;
+                           }
+                           break;
+                        }
+                     }
+                     if (conf) {
+                        if (stmt.executeUpdate("DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + nome + "');") >= 1) {
+                           out.writeUnshared("OK");
+                           System.out.println("User '" + admin + "' delete channel '" + nome + "'.");
+                        } else {
+                           out.writeUnshared("NOT OK");
+                        }
+                     } else {
+                        out.writeUnshared("NOT OK");
+                     }
+                  }
+                  out.flush();
+                  DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(),
+                                                             receivePacket.getAddress(), receivePacket.getPort());
+                  DatagramSocket socket = new DatagramSocket();
+                  socket.send(packet);
+                  
+               } else if (receivedMsg.contains("CHANGE CHANNEL")) {
+                  String[] splitStr = receivedMsg.trim().split(":");
+                  
+                  bOut = new ByteArrayOutputStream();
+                  out = new ObjectOutputStream(bOut);
+                  
+                  if (splitStr.length != 3) {
+                     out.writeUnshared("NOT OK");
+                  } else {
+                     String nome = splitStr[1];
+                     String password = splitStr[2];
+                     ResultSet rs = stmt.executeQuery("SELECT nome, password FROM canais;");
+                     boolean conf = false;
+                     while (rs.next()) {
+                        if (rs.getString("NOME").equalsIgnoreCase(nome)) {
+                           if (rs.getString("PASSWORD").equalsIgnoreCase(password)) {
+                              conf = true;
+                           }
+                           break;
+                        }
+                     }
+                     if (conf) {
+                        out.writeUnshared("OK");
+                     } else {
+                        out.writeUnshared("INVALID PASSWORD");
+                     }
+                  }
+                  
+                  out.flush();
+                  DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(),
+                                                             receivePacket.getAddress(), receivePacket.getPort());
+                  DatagramSocket socket = new DatagramSocket();
+                  socket.send(packet);
+               } else if (receivedMsg.contains("LIST CHANNELS")) {
+                  
+                  ResultSet rs = stmt.executeQuery("SELECT nome, admin FROM canais;");
+                  boolean conf = false;
+                  StringBuilder channels = new StringBuilder();
+                  while (rs.next()) {
+                     conf = true;
+                     channels.append(rs.getString("NOME"));
+                     channels.append(":");
+                     channels.append(rs.getString("ADMIN"));
+                     channels.append(":");
+                  }
+                  bOut = new ByteArrayOutputStream();
+                  out = new ObjectOutputStream(bOut);
+                  if (channels.length() > 0) {
+                     channels.setLength(channels.length() - 1);
+                     out.writeUnshared(channels.toString());
+                  }
+                  
+                  if (! conf) {
+                     out.writeUnshared("NO CHANNELS");
+                  }
+                  
+                  out.flush();
+                  DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(),
+                                                             receivePacket.getAddress(), receivePacket.getPort());
+                  DatagramSocket socket = new DatagramSocket();
+                  socket.send(packet);
                }
-               
                if (! receivedMsg.equalsIgnoreCase(ServerRequest))
                   continue;
                carga = 0;

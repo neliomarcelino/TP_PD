@@ -64,23 +64,23 @@ public class Main {
             conn = DriverManager.getConnection(dbUrl, "nelio", "carreira");
             stmt = conn.createStatement();
          } catch (SQLException e) {
-            System.err.println("There is no DataBase at '" + servername + "'");
+            e.printStackTrace();
             return;
          }
          
          stmt.executeUpdate("CREATE TABLE IF NOT EXISTS users" +
-                                    "(username VARCHAR(255) NOT NULL, " +
+                                    "(username VARCHAR(255) NOT NULL UNIQUE, " +
                                     " name VARCHAR(255) NOT NULL, " +
                                     " password VARCHAR(255) NOT NULL, " +
                                     " PRIMARY KEY ( username ))");
          
          stmt.executeUpdate("CREATE TABLE IF NOT EXISTS mensagens (" +
-                                    " username TEXT NOT NULL, " +
+                                    " username TEXT NOT NULL UNIQUE, " +
                                     " conteudo TEXT not NULL, " +
                                     " timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP );");
          
          stmt.executeUpdate("CREATE TABLE IF NOT EXISTS canais (" +
-                                    " nome TEXT NOT NULL, " +
+                                    " nome TEXT NOT NULL UNIQUE, " +
                                     " descricao TEXT NOT NULL, " +
                                     " password TEXT NOT NULL, " +
                                     " admin TEXT NOT NULL);");
