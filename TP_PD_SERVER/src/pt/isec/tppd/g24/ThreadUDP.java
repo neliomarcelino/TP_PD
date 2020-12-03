@@ -1,8 +1,5 @@
 package pt.isec.tppd.g24;
 
-
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
-
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
