@@ -77,7 +77,7 @@ public class ThreadTCP extends Thread {
                     socketUdp.send(packet);
                 }
             }
-        } catch (SocketException e) {
+        } catch (SocketException | EOFException e) {
             synchronized (listaDeClientes){
                 listaDeClientes.remove(socketClient);
             }
