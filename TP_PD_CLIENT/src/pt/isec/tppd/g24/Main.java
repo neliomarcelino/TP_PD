@@ -58,7 +58,7 @@ public class Main {
             System.out.println("A enviar pedido de conexao para o servidor: <" + inicial.getAddr() + ":" + inicial.getPortUdp() + ">");
             
             socketUdp.send(packet);
-            socketUdp.setSoTimeout(5000); // 5 sec
+            socketUdp.setSoTimeout(30000); // 30 sec
             packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
             
             socketUdp.receive(packet);
@@ -275,14 +275,15 @@ public class Main {
                }
                continue;
             }
-            // TODO - NEEDS FIX
             else if(teclado.contains("/editchannel")) {
                splitStr = teclado.trim().split("\\s");
                if (splitStr.length != 2) {
                   System.out.println("Erro nos argumentos");
                   continue;
                }
-               String editChannel = "EDIT CHANNEL" + ":" + splitStr[1] + ":" + user.getUsername();
+               
+               String nome = splitStr[1];
+               String editChannel = "EDIT CHANNEL" + ":" + nome + ":" + user.getUsername();
    
                bOut = new ByteArrayOutputStream();
                out = new ObjectOutputStream(bOut);
@@ -301,21 +302,22 @@ public class Main {
                in = new ObjectInputStream(bIn);
    
                String res = (String) in.readObject();
-               if (res.equalsIgnoreCase("OK")) {
-                  canal = splitStr[1];
-                  System.out.println("Conectado ao canal '" + canal + "'");
-               } else if (res.equalsIgnoreCase("NOT OK")) {
-                  System.out.println("Erro! Canal ou password errada");
+               if(res.equalsIgnoreCase("NOT ADMIN")) {
+                  System.out.println("Apenas o admin pode editar os canais");
+                  continue;
+               }else if (res.equalsIgnoreCase("NOT OK")) {
+                  System.out.println("ERRO!");
+                  continue;
                }
    
-               System.out.println("Edita canal " + splitStr[1] + ":");
+               System.out.println("Edita canal " + nome + ":");
                System.out.println("Descricao: ");
                String descricao = inTeclado.readLine();
                System.out.println("Password: ");
                String password = inTeclado.readLine();
                System.out.println("Admin: ");
                String admin = inTeclado.readLine();
-               editChannel = "EDIT CHANNEL" + ":" + splitStr[1] + ":" + user.getUsername();
+               editChannel = "EDIT CHANNEL" + ":" + nome + ":" + descricao + ":" + password + ":" + admin;
    
                bOut = new ByteArrayOutputStream();
                out = new ObjectOutputStream(bOut);
@@ -335,7 +337,9 @@ public class Main {
    
                res = (String) in.readObject();
                if (res.equalsIgnoreCase("OK")) {
-                  System.out.println("Canal '" + canal + "' editado com sucesso!");
+                  System.out.println("Canal '" + nome + "' editado com sucesso!");
+               } else if(res.equalsIgnoreCase("ADMIN NOT EXISTS")) {
+                  System.out.println("Admin inserido nao existe");
                } else if (res.equalsIgnoreCase("NOT OK")) {
                   System.out.println("Erro! Nao foi possivel editar o canal");
                }
@@ -371,11 +375,9 @@ public class Main {
                
                String res = (String) in.readObject();
                if (res.equalsIgnoreCase("OK")) {
-                  System.out.println("Canal '" + canal + "' eliminado com sucesso!");
-               } else if (res.equalsIgnoreCase("NO CHANNEL WITH NAME ")) {
-                  System.out.println("Nao existe nenhum canal com o nome de '" + nome + "'");
+                  System.out.println("Canal '" + nome + "' eliminado com sucesso!");
                } else if (res.equalsIgnoreCase("NOT OK")) {
-                  System.out.println("Erro! Canal ou password errada");
+                  System.out.println("Erro!");
                }
                continue;
             }
@@ -404,8 +406,39 @@ public class Main {
                } else {
                   splitStr = (res.trim().split(":"));
                   System.out.println("Lista dos canais:");
-                  for(int i = 0; i < splitStr.length;) {
-                     System.out.println("Nome: '" + splitStr[i++] + "'\tAdmin: '" + splitStr[i++] + "'");
+                  System.out.format("  %15s\t\t%15s\n", "Nome", "Admin");
+                  for(int i = 0, j = 1; i < splitStr.length; j++) {
+                     System.out.format("%d %15s\t\t%15s\n", j, splitStr[i++], splitStr[i++]);
+                  }
+               }
+               continue;
+            }
+            else if (teclado.contains("/listusers")){
+               bOut = new ByteArrayOutputStream();
+               out = new ObjectOutputStream(bOut);
+   
+               out.writeUnshared("LIST USERS");
+               out.flush();
+   
+               packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
+   
+               socketUdp.send(packet);
+               socketUdp.setSoTimeout(5000); // 5 sec
+   
+               packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
+               socketUdp.receive(packet);
+               bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+               in = new ObjectInputStream(bIn);
+   
+               String res = (String) in.readObject();
+               if (res.equalsIgnoreCase("NOT OK")) {
+                  System.out.println("Nao foi possivel listar os canais!");
+               } else {
+                  splitStr = (res.trim().split(":"));
+                  System.out.println("  Lista dos utilizadores:");
+                  
+                  for(int i = 0, j = 1; i < splitStr.length; j++) {
+                     System.out.format("%d %15s\t\t%15s", j, splitStr[i++], splitStr[i++]);
                   }
                }
                continue;
@@ -426,6 +459,8 @@ public class Main {
                                           "\n\tEdita canal (necessita de ser administrador)" +
                                           "\n\n/delchannel [nome do canal]" +
                                           "\n\tElimina canal (necessita de ser administrador)" +
+                                          "\n\n/listusers" +
+                                          "\n\tLista todos os utilizadores" +
                                           "\n\n");
                continue;
             } else {

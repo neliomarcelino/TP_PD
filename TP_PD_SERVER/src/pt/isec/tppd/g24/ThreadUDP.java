@@ -1,6 +1,8 @@
 package pt.isec.tppd.g24;
 
 
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
+
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -194,7 +196,6 @@ public class ThreadUDP extends Thread {
                   socket.send(packet);
                   
                }
-               // TODO - NEEDS FIX
                else if (receivedMsg.contains("EDIT CHANNEL")) {
                   String[] splitStr = receivedMsg.trim().split(":");
                   
@@ -206,20 +207,23 @@ public class ThreadUDP extends Thread {
                      String user = splitStr[2];
                      
                      ResultSet rs = stmt.executeQuery("SELECT nome, admin FROM canais;");
-                     boolean conf = false;
+                     int conf = 0;
                      while (rs.next()) {
                         if (rs.getString("NOME").equalsIgnoreCase(nome)) {
+                           conf = 1;
                            if (rs.getString("ADMIN").equalsIgnoreCase(user)) {
-                              conf = true;
+                              conf = 2;
                            }
                            break;
                         }
                      }
-                     if (conf) {
+                     if (conf == 2) {
                         out.writeUnshared("OK");
-                        
-                     } else {
+                        System.out.println("User '" + user + "' esta a editar o canal '" + nome + "'");
+                     } else if (conf == 1) {
                         out.writeUnshared("NOT ADMIN");
+                     } else {
+                        out.writeUnshared("NOT OK");
                      }
                   } else if (splitStr.length == 5) {
                      String nome = splitStr[1];
@@ -227,16 +231,17 @@ public class ThreadUDP extends Thread {
                      String password = splitStr[3];
                      String admin = splitStr[4];
                      
-                     ResultSet rs = stmt.executeQuery("SELECT nome, admin FROM canais;");
+                     ResultSet rs = stmt.executeQuery("SELECT username FROM users;");
                      boolean conf = false;
                      while (rs.next()) {
-                        if (rs.getString("NOME").equalsIgnoreCase(nome)) {
+                        if (rs.getString("USERNAME").equalsIgnoreCase(admin)) {
                            conf = true;
                            break;
                         }
                      }
+                     
                      if (conf) {
-                        if (stmt.executeUpdate("UPDATE canais" +
+                        if (stmt.executeUpdate("UPDATE canais " +
                                                        "SET descricao = '" + descricao + "', " +
                                                        "password = '" + password + "', " +
                                                        "admin = '" + admin + "' " +
@@ -244,7 +249,7 @@ public class ThreadUDP extends Thread {
                            out.writeUnshared("OK");
                         }
                      } else {
-                        out.writeUnshared("NOT OK");
+                        out.writeUnshared("ADMIN NOT EXISTS");
                      }
                   } else {
                      out.writeUnshared("NOT OK");
@@ -280,7 +285,7 @@ public class ThreadUDP extends Thread {
                      if (conf) {
                         if (stmt.executeUpdate("DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + nome + "');") >= 1) {
                            out.writeUnshared("OK");
-                           System.out.println("User '" + admin + "' delete channel '" + nome + "'.");
+                           System.out.println("User '" + admin + "' eliminou canal '" + nome + "'");
                         } else {
                            out.writeUnshared("NOT OK");
                         }
@@ -328,7 +333,6 @@ public class ThreadUDP extends Thread {
                   DatagramSocket socket = new DatagramSocket();
                   socket.send(packet);
                } else if (receivedMsg.contains("LIST CHANNELS")) {
-                  
                   ResultSet rs = stmt.executeQuery("SELECT nome, admin FROM canais;");
                   boolean conf = false;
                   StringBuilder channels = new StringBuilder();
@@ -355,6 +359,35 @@ public class ThreadUDP extends Thread {
                                                              receivePacket.getAddress(), receivePacket.getPort());
                   DatagramSocket socket = new DatagramSocket();
                   socket.send(packet);
+                  
+               } else if (receivedMsg.contains("LIST USERS")) {
+                  ResultSet rs = stmt.executeQuery("SELECT username, name FROM users;");
+                  boolean conf = false;
+                  StringBuilder channels = new StringBuilder();
+                  while (rs.next()) {
+                     conf = true;
+                     channels.append(rs.getString("username"));
+                     channels.append(":");
+                     channels.append(rs.getString("name"));
+                     channels.append(":");
+                  }
+                  bOut = new ByteArrayOutputStream();
+                  out = new ObjectOutputStream(bOut);
+                  if (channels.length() > 0) {
+                     channels.setLength(channels.length() - 1);
+                     out.writeUnshared(channels.toString());
+                  }
+   
+                  if (! conf) {
+                     out.writeUnshared("NOT OK");
+                  }
+   
+                  out.flush();
+                  DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(),
+                                                             receivePacket.getAddress(), receivePacket.getPort());
+                  DatagramSocket socket = new DatagramSocket();
+                  socket.send(packet);
+                  
                }
                if (! receivedMsg.equalsIgnoreCase(ServerRequest))
                   continue;
