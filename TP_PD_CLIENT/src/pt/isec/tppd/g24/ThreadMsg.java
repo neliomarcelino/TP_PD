@@ -25,7 +25,8 @@ public class ThreadMsg extends Thread{
         ObjectInputStream in;
         Object obj;
         Msg msg;
-
+		ThreadDownload t = null;
+		String resp;
         if(socketTcp == null || !running){
             return;
         }
@@ -40,6 +41,17 @@ public class ThreadMsg extends Thread{
 
                     System.out.println();
                     System.out.println(msg.getUsername() + ": " + msg.getConteudo());
+                }else if(obj instanceof String){
+                    resp = (String) obj;
+                    if(resp.contains("/get_fich")){
+                        String[] splitStr = resp.trim().split("\\s+");
+                        if(splitStr[1].equalsIgnoreCase("Erro")){
+                            System.out.println("Ficheiro nao existe no servidor/canal.");
+                            continue;
+                        }
+                        (t = new ThreadDownload(socketTcp.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), splitStr[1])).start();
+                        continue;
+                    }
                 }
                 System.out.print("> ");
             }catch (SocketException e) {

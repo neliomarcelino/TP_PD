@@ -1,22 +1,25 @@
 package pt.isec.tppd.g24;
 
-
 import java.io.*;
 import java.net.*;
+
+import java.io.*;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 
 public class ThreadDownload extends Thread{
     public static final int MAX_SIZE = 5120;
     private String serverAddr;
     private int serverPort;
-	private String canal;
 
     private String fileName;
 
-    ThreadDownload(String serverAddress, int serverPort, String fileName, String canal){
+    ThreadDownload(String serverAddress, int serverPort, String fileName){
         this.serverAddr = serverAddress;
         this.serverPort = serverPort;
         this.fileName = fileName;
-		this.canal = canal;
     }
 
     @Override
@@ -29,11 +32,7 @@ public class ThreadDownload extends Thread{
         //int contador = 0;
         ObjectOutputStream out;
 
-        localDirectory = new File(System.getProperty("user.dir") + File.separator + canal);
-		if (!localDirectory.exists()){
-			localDirectory.mkdir();
-		}
-		
+        localDirectory = new File(System.getProperty("user.dir"));
         try{
 
             try{
@@ -66,7 +65,7 @@ public class ThreadDownload extends Thread{
                     localFileOutputStream.write(buffer, 0, nbytes);
 
                 System.out.println("Transferencia concluida.");
-               
+
             }catch(UnknownHostException e){
                 System.out.println("Destino desconhecido:\n\t"+e);
             }catch(NumberFormatException e){

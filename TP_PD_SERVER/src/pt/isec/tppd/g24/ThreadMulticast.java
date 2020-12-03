@@ -67,7 +67,7 @@ public class ThreadMulticast extends Thread {
                                 socketFich = new DatagramSocket();
                                 buff = new ByteArrayOutputStream();
                                 out = new ObjectOutputStream(buff);
-                                out.writeUnshared("/fich " + splitStr[1]);
+                                out.writeUnshared("/fich " + splitStr[1] + " " + msg.getCanal());
                                 out.flush();
 
                                 pkt = new DatagramPacket(buff.toByteArray(), buff.size(), InetAddress.getByName(splitStr[2]), Integer.parseInt(splitStr[3]));
@@ -77,9 +77,9 @@ public class ThreadMulticast extends Thread {
                                 socketFich.receive(pkt);
                                 in = new ObjectInputStream(new ByteArrayInputStream(pkt.getData(), 0, pkt.getLength()));
 
-                                (t = new ThreadDownload(splitStr[2], (int) in.readObject(), splitStr[1])).start();
+                                (t = new ThreadDownload(splitStr[2], (int) in.readObject(), splitStr[1], msg.getCanal())).start();
                             }
-							msg = new Msg(msg.getUsername(), splitStr[0] + " " + splitStr[1]);
+							msg = new Msg(msg.getUsername(), splitStr[0] + " " + splitStr[1], msg.getCanal());
                         }
 
                         System.out.println(msg.getUsername() + ":" + msg.getConteudo());

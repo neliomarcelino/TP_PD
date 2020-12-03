@@ -71,7 +71,7 @@ public class ThreadUDP extends Thread {
                if (receivedMsg.contains("/fich")) {
                   String[] splitStr = receivedMsg.trim().split("\\s+");
                   ServerSocket socketfich = new ServerSocket(0);
-                  (t = new ThreadUpload(socketfich, splitStr[1])).start();
+				  (t = new ThreadUpload(socketfich, splitStr[1], splitStr[2])).start();
                   
                   bOut = new ByteArrayOutputStream();
                   out = new ObjectOutputStream(bOut);

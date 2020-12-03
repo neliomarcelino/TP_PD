@@ -185,6 +185,10 @@ public class Main {
                   System.out.println("Erro no numero de argumentos");
                   continue;
                }
+			   if (canal.equalsIgnoreCase("")) {
+                  System.out.println("Nao está em nenhum canal!");
+                  continue;
+               }
                f = new File(System.getProperty("user.dir") + File.separator + splitStr[1]);
                if (! f.isFile()) {
                   System.out.println("Ficheiro nao esta na directoria:" + System.getProperty("user.dir"));
@@ -193,7 +197,18 @@ public class Main {
                socket = new ServerSocket(0);
                msgEnvio = new Msg(user.getUsername(), teclado + " " + socket.getLocalPort(), canal);
                
-            } else if (teclado.contains("/canal")) {
+            } else if(teclado.contains("/get_fich")){
+                    splitStr = teclado.trim().split("\\s+");
+                    if(splitStr.length != 2){
+                        System.out.println("Erro no numero de argumentos");
+                        continue;
+                    }
+					if (canal.equalsIgnoreCase("")) {
+						System.out.println("Nao está em nenhum canal!");
+						continue;
+					}
+                    msgEnvio = new Msg(user.getUsername(), teclado, canal);
+            }else if (teclado.contains("/canal")) {
                splitStr = teclado.trim().split("\\s");
                if (splitStr.length != 3) {
                   System.out.println("Erro nos argumentos");

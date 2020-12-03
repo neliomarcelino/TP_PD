@@ -6,11 +6,12 @@ import java.net.*;
 public class ThreadUpload extends Thread{
     public static final int MAX_SIZE = 5120;
     private ServerSocket socket;
-    private String fileName;
+    private String fileName, canal;
 
-    ThreadUpload(ServerSocket socket, String fileName){
+    ThreadUpload(ServerSocket socket, String fileName, String canal){
         this.socket = socket;
         this.fileName = fileName;
+		this.canal = canal;
     }
 
     @Override
@@ -25,7 +26,7 @@ public class ThreadUpload extends Thread{
         int nbytes;
 
         try{
-            localDirectory = new File(System.getProperty("user.dir"));
+            localDirectory = new File(System.getProperty("user.dir") + File.separator + canal);
 
             while(true){
 
