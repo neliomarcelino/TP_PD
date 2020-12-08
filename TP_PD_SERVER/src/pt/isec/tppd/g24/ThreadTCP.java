@@ -2,6 +2,9 @@ package pt.isec.tppd.g24;
 
 import java.io.*;
 import java.net.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 public class ThreadTCP extends Thread {
@@ -12,14 +15,16 @@ public class ThreadTCP extends Thread {
     protected boolean running;
     private InfoServer esteServer;
 	private List<Socket> listaDeClientes;
+	private Statement stmt;
 
-    ThreadTCP(Socket socketClient, InetAddress group, int portMulti, InfoServer esteServer, List<Socket> listaDeClientes) {
+    ThreadTCP(Socket socketClient, InetAddress group, int portMulti, InfoServer esteServer, List<Socket> listaDeClientes, Statement stmt) {
         this.socketClient = socketClient;
         this.portMulti = portMulti;
         this.group = group;
         this.esteServer = esteServer;
         running = true;
         this.listaDeClientes = listaDeClientes;
+        this.stmt = stmt;
     }
 
     @Override
@@ -30,12 +35,15 @@ public class ThreadTCP extends Thread {
         Object obj;
         ByteArrayOutputStream bOut;
         Msg mensagem;
+        String cli_req;
         DatagramPacket packet = null;
         DatagramSocket socketUdp = null;
 		ThreadDownload t = null;
 		File f;
         try {
             while(running) {
+                System.out.println("ThreadTCP BIMP");
+                out = new ObjectOutputStream(socketClient.getOutputStream());
                 in = new ObjectInputStream(socketClient.getInputStream());
                 obj = in.readObject();
 
@@ -48,7 +56,8 @@ public class ThreadTCP extends Thread {
                         (t = new ThreadDownload(socketClient.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), splitStr[1], mensagem.getCanal())).start();
                         mensagem = new Msg(mensagem.getUsername(), splitStr[0]+" "+splitStr[1] + " "+ esteServer, mensagem.getCanal());
 						t.join();
-                    }else if(mensagem.getConteudo().contains("/get_fich")){
+                    }
+                    else if(mensagem.getConteudo().contains("/get_fich")){
                         String[] splitStr = mensagem.getConteudo().trim().split("\\s+");
                         f = new File(System.getProperty("user.dir")+ File.separator + mensagem.getCanal() + File.separator + splitStr[1]);
                         if(!f.isFile()){
@@ -65,6 +74,7 @@ public class ThreadTCP extends Thread {
                         (new ThreadUpload(socket, splitStr[1], mensagem.getCanal())).start();
                         continue;
                     }
+                    
 
                     socketUdp = new DatagramSocket();
                     bOut = new ByteArrayOutputStream();
@@ -75,6 +85,34 @@ public class ThreadTCP extends Thread {
 
                     packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
                     socketUdp.send(packet);
+                } else if(obj instanceof String) {
+                    cli_req = (String)obj;
+                    if (cli_req.contains("CHANGE CHANNEL")) {
+                        System.out.println("Changing channel");
+                        String[] splitStr = cli_req.trim().split(":");
+        
+                        if (splitStr.length != 3) {
+                            out.writeObject("NOT OK");
+                        } else {
+                            String nome = splitStr[1];
+                            String password = splitStr[2];
+                            ResultSet rs = stmt.executeQuery("SELECT nome, password FROM canais;");
+                            boolean conf = false;
+                            while (rs.next()) {
+                                if (rs.getString("NOME").equalsIgnoreCase(nome)) {
+                                    if (rs.getString("PASSWORD").equalsIgnoreCase(password)) {
+                                        conf = true;
+                                    }
+                                    break;
+                                }
+                            }
+                            if (conf) {
+                                out.writeObject("OK");
+                            } else {
+                                out.writeObject("INVALID PASSWORD");
+                            }
+                        }
+                    }
                 }
             }
         } catch (SocketException | EOFException e) {
@@ -93,6 +131,8 @@ public class ThreadTCP extends Thread {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }

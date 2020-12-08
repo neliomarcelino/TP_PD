@@ -21,6 +21,8 @@ public class Main {
       ByteArrayInputStream bIn;
       ObjectInputStream in;
       ObjectOutputStream out;
+      ObjectInputStream tcp_in;
+      ObjectOutputStream tcp_out;
       String ServerRequest = "LIGACAO SERVER";
       boolean conexao = false;
       List<InfoServer> lista; // lista[0] = serverAddr | lista[1] = serverPortUdp | lista[2] = serverPortTcp
@@ -217,24 +219,11 @@ public class Main {
                String nome = splitStr[1];
                String password = splitStr[2];
                String changeChannel = "CHANGE CHANNEL" + ":" + nome + ":" + password;
-               
-               bOut = new ByteArrayOutputStream();
-               out = new ObjectOutputStream(bOut);
-               
-               out.writeUnshared(changeChannel);
-               out.flush();
-               
-               packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
-               
-               socketUdp.send(packet);
-               socketUdp.setSoTimeout(5000); // 5 sec
-               
-               packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
-               socketUdp.receive(packet);
-               bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-               in = new ObjectInputStream(bIn);
-               
-               String res = (String) in.readObject();
+               tcp_out = new ObjectOutputStream(socketTcp.getOutputStream());
+               tcp_out.writeObject(changeChannel);
+
+               tcp_in = new ObjectInputStream(socketTcp.getInputStream());
+               String res = (String) tcp_in.readObject();
                if (res.equalsIgnoreCase("OK")) {
                   canal = splitStr[1];
                   System.out.println("Conectado ao canal '" + canal + "'");
@@ -279,6 +268,7 @@ public class Main {
                socketUdp.receive(packet);
                bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                in = new ObjectInputStream(bIn);
+               
                String res = (String) in.readObject();
                if (res.equalsIgnoreCase("OK")) {
                   canal = nome;

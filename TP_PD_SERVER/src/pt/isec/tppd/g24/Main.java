@@ -72,10 +72,11 @@ public class Main {
                                     "(username VARCHAR(255) NOT NULL UNIQUE, " +
                                     " name VARCHAR(255) NOT NULL, " +
                                     " password VARCHAR(255) NOT NULL, " +
+                                    " timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                                     " PRIMARY KEY ( username ))");
          
          stmt.executeUpdate("CREATE TABLE IF NOT EXISTS mensagens (" +
-                                    " username VARCHAR(255)  NOT NULL UNIQUE, " +
+                                    " username VARCHAR(255)  NOT NULL, " +
                                     " conteudo VARCHAR(255)  not NULL, " +
                                     " timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP );");
          
@@ -83,6 +84,7 @@ public class Main {
                                     " nome VARCHAR(255)  NOT NULL UNIQUE, " +
                                     " descricao VARCHAR(255)  NOT NULL, " +
                                     " password VARCHAR(255)  NOT NULL, " +
+                                    " timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                                     " admin VARCHAR(255)  NOT NULL);");
          
          System.out.println("Using database '" + servername + "' on '" + dbUrl + "'");
@@ -118,7 +120,7 @@ public class Main {
             synchronized (listaDeClientes) {
                listaDeClientes.add(socketToClient);
             }
-            new ThreadTCP(socketToClient, group, portMulti, esteServer, listaDeClientes).start();
+            new ThreadTCP(socketToClient, group, portMulti, esteServer, listaDeClientes, stmt).start();
          }
       } catch (NumberFormatException e) {
          System.out.println("O porto de escuta deve ser um inteiro positivo.");

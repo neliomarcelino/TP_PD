@@ -4,7 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class ThreadMsg extends Thread{
+public class ThreadMsg extends Thread {
     private Socket socketTcp;
     protected boolean running;
     private List<InfoServer> lista;

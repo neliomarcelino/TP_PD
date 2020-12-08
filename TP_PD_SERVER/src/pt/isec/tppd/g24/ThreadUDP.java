@@ -199,6 +199,7 @@ public class ThreadUDP extends Thread {
                   bOut = new ByteArrayOutputStream();
                   out = new ObjectOutputStream(bOut);
                   
+                  // confirma se pode editar canal
                   if (splitStr.length == 3) {
                      String nome = splitStr[1];
                      String user = splitStr[2];
@@ -222,7 +223,9 @@ public class ThreadUDP extends Thread {
                      } else {
                         out.writeUnshared("NOT OK");
                      }
-                  } else if (splitStr.length == 5) {
+                  }
+                  // Edita canal
+                  else if (splitStr.length == 5) {
                      String nome = splitStr[1];
                      String descricao = splitStr[2];
                      String password = splitStr[3];
@@ -296,40 +299,7 @@ public class ThreadUDP extends Thread {
                   DatagramSocket socket = new DatagramSocket();
                   socket.send(packet);
                   
-               } else if (receivedMsg.contains("CHANGE CHANNEL")) {
-                  String[] splitStr = receivedMsg.trim().split(":");
-                  
-                  bOut = new ByteArrayOutputStream();
-                  out = new ObjectOutputStream(bOut);
-                  
-                  if (splitStr.length != 3) {
-                     out.writeUnshared("NOT OK");
-                  } else {
-                     String nome = splitStr[1];
-                     String password = splitStr[2];
-                     ResultSet rs = stmt.executeQuery("SELECT nome, password FROM canais;");
-                     boolean conf = false;
-                     while (rs.next()) {
-                        if (rs.getString("NOME").equalsIgnoreCase(nome)) {
-                           if (rs.getString("PASSWORD").equalsIgnoreCase(password)) {
-                              conf = true;
-                           }
-                           break;
-                        }
-                     }
-                     if (conf) {
-                        out.writeUnshared("OK");
-                     } else {
-                        out.writeUnshared("INVALID PASSWORD");
-                     }
-                  }
-                  
-                  out.flush();
-                  DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(),
-                                                             receivePacket.getAddress(), receivePacket.getPort());
-                  DatagramSocket socket = new DatagramSocket();
-                  socket.send(packet);
-               } else if (receivedMsg.contains("LIST CHANNELS")) {
+               }  else if (receivedMsg.contains("LIST CHANNELS")) {
                   ResultSet rs = stmt.executeQuery("SELECT nome, admin FROM canais;");
                   boolean conf = false;
                   StringBuilder channels = new StringBuilder();
