@@ -29,6 +29,8 @@ public class ThreadMsg extends Thread {
       Msg msg;
       ThreadDownload t = null;
       String resp;
+	  File f;
+	  int j;
       if (socketTcp == null || ! running) {
          return;
       }
@@ -52,7 +54,19 @@ public class ThreadMsg extends Thread {
                      System.out.println("Ficheiro nao existe no servidor/canal.");
                      continue;
                   }
-                  (t = new ThreadDownload(socketTcp.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), splitStr[1])).start();
+				  fileName = splitStr[1];
+				  String[] splitFilename = splitStr[1].trim().split("\\.");
+				  f = new File(System.getProperty("user.dir") + File.separator + fileName);
+				  j = 1;
+				  while(f.isFile()){
+				  	 fileName = splitFilename[0] + "(" + j + ")";
+					 for(int k = 1; k < splitFilename.length; k++){
+						fileName += "." + splitFilename[k];
+					 }
+					 f = new File(System.getProperty("user.dir")+ File.separator + fileName);
+					 j++;
+				  }
+                  (t = new ThreadDownload(socketTcp.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName).start();
                   continue;
                   
                } else if (resp.contains("CHANGE CHANNEL")) {

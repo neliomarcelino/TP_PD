@@ -35,11 +35,12 @@ public class ThreadTCP extends Thread {
         Object obj;
         ByteArrayOutputStream bOut;
         Msg mensagem;
-        String cli_req;
+        String cli_req, fileName;
         DatagramPacket packet = null;
         DatagramSocket socketUdp = null;
 		ThreadDownload t = null;
 		File f;
+		int i;
         try {
             while(running) {
                 in = new ObjectInputStream(socketClient.getInputStream());
@@ -51,8 +52,20 @@ public class ThreadTCP extends Thread {
 					// Tratamento de ficheiros
                     if(mensagem.getConteudo().contains("/fich")){
                         String[] splitStr = mensagem.getConteudo().trim().split("\\s+");
-                        (t = new ThreadDownload(socketClient.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), splitStr[1], mensagem.getCanal())).start();
-                        mensagem = new Msg(mensagem.getUsername(), splitStr[0]+" "+splitStr[1] + " "+ esteServer, mensagem.getCanal());
+						String[] splitFilename = splitStr[1].trim().split("\\.");
+						fileName = splitStr[1];
+						f = new File(System.getProperty("user.dir")+ File.separator + mensagem.getCanal() + File.separator + fileName);
+						i = 1;
+						while(f.isFile()){
+							fileName = splitFilename[0] + "(" + i + ")";
+							for(int j = 1; j < splitFilename.length; j++){
+								fileName += splitFilename[j];
+							}
+							f = new File(System.getProperty("user.dir")+ File.separator + mensagem.getCanal() + File.separator + fileName);
+							i++;
+						}
+                        (t = new ThreadDownload(socketClient.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName, mensagem.getCanal())).start();
+                        mensagem = new Msg(mensagem.getUsername(), splitStr[0]+" "+fileName + " "+ esteServer, mensagem.getCanal());
 						t.join();
                     }
                     else if(mensagem.getConteudo().contains("/get_fich")){
