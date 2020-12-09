@@ -1,5 +1,7 @@
 package pt.isec.tppd.g24;
 
+import com.sun.xml.internal.ws.api.config.management.ManagedEndpointFactory;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -21,8 +23,6 @@ public class Main {
       ByteArrayInputStream bIn;
       ObjectInputStream in;
       ObjectOutputStream out;
-      ObjectInputStream tcp_in;
-      ObjectOutputStream tcp_out;
       String ServerRequest = "LIGACAO SERVER";
       boolean conexao = false;
       List<InfoServer> lista; // lista[0] = serverAddr | lista[1] = serverPortUdp | lista[2] = serverPortTcp
@@ -170,12 +170,13 @@ public class Main {
          
          socketTcp = new Socket(inicial.getAddr(), inicial.getPortTcp());
          
-         t = new ThreadMsg(socketTcp, lista, ServerRequest, socketUdp);
+         t = new ThreadMsg(socketTcp, lista, ServerRequest, socketUdp, canal);
          t.start();
          
          while (true) {
             System.out.print("> ");
             teclado = inTeclado.readLine();
+            canal = t.setChannel();
             
             if (teclado.equalsIgnoreCase(EXIT)) {
                break;
@@ -210,7 +211,8 @@ public class Main {
 						continue;
 					}
                     msgEnvio = new Msg(user.getUsername(), teclado, canal);
-            }else if (teclado.contains("/canal")) {
+            }
+            else if (teclado.contains("/channel")) {
                splitStr = teclado.trim().split("\\s");
                if (splitStr.length != 3) {
                   System.out.println("Erro nos argumentos");
@@ -219,25 +221,14 @@ public class Main {
                String nome = splitStr[1];
                String password = splitStr[2];
                String changeChannel = "CHANGE CHANNEL" + ":" + nome + ":" + password;
-               tcp_out = new ObjectOutputStream(socketTcp.getOutputStream());
-               tcp_out.writeObject(changeChannel);
-
-               tcp_in = new ObjectInputStream(socketTcp.getInputStream());
-               String res = (String) tcp_in.readObject();
-               if (res.equalsIgnoreCase("OK")) {
-                  canal = splitStr[1];
-                  System.out.println("Conectado ao canal '" + canal + "'");
-               } else if(res.equalsIgnoreCase("INVALID PASSWORD")) {
-                  System.out.println("Password invalida!");
-               } else if (res.equalsIgnoreCase("NOT OK")) {
-                  System.out.println("Erro!");
-               }
-               continue;
+               msgEnvio = new Msg(user.getUsername(), changeChannel, canal);
                
+            } else if(teclado.contains("/thischannel")) {
+               System.out.println("Canal atual: " + canal);
+               continue;
             } else if (teclado.contains("/createchannel")) {
                splitStr = teclado.trim().split("\\s");
 
-               conf = true;
                String nome, descricao, password;
                System.out.println("Criar canal");
                System.out.print("Nome do canal: ");
@@ -251,34 +242,10 @@ public class Main {
                System.out.print("Password: ");
                password = inTeclado.readLine();
                
-               String createChannel = "CREATE CHANNEL" + ":" + nome + ":" + descricao + ":" + password + ":" + user.getUsername();
+               String createChannel = "CREATE CHANNEL" + ":" + nome + ":" + descricao + ":" + password;
                
-               bOut = new ByteArrayOutputStream();
-               out = new ObjectOutputStream(bOut);
+               msgEnvio = new Msg(user.getUsername(), createChannel, canal);
                
-               out.writeUnshared(createChannel);
-               out.flush();
-               
-               packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
-               
-               socketUdp.send(packet);
-               socketUdp.setSoTimeout(5000); // 5 sec
-               
-               packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
-               socketUdp.receive(packet);
-               bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-               in = new ObjectInputStream(bIn);
-               
-               String res = (String) in.readObject();
-               if (res.equalsIgnoreCase("OK")) {
-                  canal = nome;
-                  System.out.println("Canal '" + canal + "' criado com sucesso!");
-               } else if (res.equalsIgnoreCase("NAME IN USE")) {
-                  System.out.println("Nao foi possivel criar o canal. Ja existe um canal com nome '" + splitStr[1] + "'");
-               } else if (res.equalsIgnoreCase("NOT OK")) {
-                  System.out.println("Erro! Canal ou password errada");
-               }
-               continue;
             }
             else if(teclado.contains("/editchannel")) {
                splitStr = teclado.trim().split("\\s");
@@ -324,135 +291,42 @@ public class Main {
                String admin = inTeclado.readLine();
                editChannel = "EDIT CHANNEL" + ":" + nome + ":" + descricao + ":" + password + ":" + admin;
    
-               bOut = new ByteArrayOutputStream();
-               out = new ObjectOutputStream(bOut);
+               msgEnvio = new Msg(user.getUsername(), editChannel, canal);
    
-               out.writeUnshared(editChannel);
-               out.flush();
-   
-               packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
-   
-               socketUdp.send(packet);
-               socketUdp.setSoTimeout(5000); // 5 sec
-   
-               packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
-               socketUdp.receive(packet);
-               bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-               in = new ObjectInputStream(bIn);
-   
-               res = (String) in.readObject();
-               if (res.equalsIgnoreCase("OK")) {
-                  System.out.println("Canal '" + nome + "' editado com sucesso!");
-               } else if(res.equalsIgnoreCase("ADMIN NOT EXISTS")) {
-                  System.out.println("Admin inserido nao existe");
-               } else if (res.equalsIgnoreCase("NOT OK")) {
-                  System.out.println("Erro! Nao foi possivel editar o canal");
-               }
-   
-               continue;
             }
             else if(teclado.contains("/delchannel")) {
                splitStr = teclado.trim().split("\\s");
                
                String nome = splitStr[1];
                if(nome.contains(":")) {
-                  System.out.println("Nao existem canais com o simbolo ':'");
+                  System.out.println("Erro! Nao existe canal com o nome '" + nome + "'");
                   continue;
                }
    
-               String deleteChannel = "DELETE CHANNEL" + ":" + nome + ":" + user.getUsername();
+               String deleteChannel = "DELETE CHANNEL" + ":" + nome;
    
-               bOut = new ByteArrayOutputStream();
-               out = new ObjectOutputStream(bOut);
-   
-               out.writeUnshared(deleteChannel);
-               out.flush();
-   
-               packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
-   
-               socketUdp.send(packet);
-               socketUdp.setSoTimeout(5000); // 5 sec
-   
-               packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
-               socketUdp.receive(packet);
-               bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-               in = new ObjectInputStream(bIn);
-               
-               String res = (String) in.readObject();
-               if (res.equalsIgnoreCase("OK")) {
-                  System.out.println("Canal '" + nome + "' eliminado com sucesso!");
-               } else if (res.equalsIgnoreCase("NOT OK")) {
-                  System.out.println("Erro!");
-               }
-               continue;
+               msgEnvio = new Msg(user.getUsername(), deleteChannel, canal);
+
             }
             else if (teclado.contains("/listchannels")) {
-               bOut = new ByteArrayOutputStream();
-               out = new ObjectOutputStream(bOut);
-   
-               out.writeUnshared("LIST CHANNELS");
-               out.flush();
-   
-               packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
-   
-               socketUdp.send(packet);
-               socketUdp.setSoTimeout(5000); // 5 sec
-   
-               packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
-               socketUdp.receive(packet);
-               bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-               in = new ObjectInputStream(bIn);
+               String listchannels = "LIST CHANNELS";
                
-               String res = (String) in.readObject();
-               if (res.equalsIgnoreCase("NOT OK")) {
-                  System.out.println("Nao foi possivel listar os canais!");
-               } else if (res.equalsIgnoreCase("NO CHANNELS")) {
-                  System.out.println("Nao existem canais criados.");
-               } else {
-                  splitStr = (res.trim().split(":"));
-                  System.out.println("Lista dos canais:");
-                  System.out.format("  %15s\t\t%15s\n", "Nome", "Admin");
-                  for(int i = 0, j = 1; i < splitStr.length; j++) {
-                     System.out.format("%d %15s\t\t%15s\n", j, splitStr[i++], splitStr[i++]);
-                  }
-               }
-               continue;
+               msgEnvio = new Msg(user.getUsername(), listchannels, canal);
+
             }
             else if (teclado.contains("/listusers")){
-               bOut = new ByteArrayOutputStream();
-               out = new ObjectOutputStream(bOut);
-   
-               out.writeUnshared("LIST USERS");
-               out.flush();
-   
-               packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
-   
-               socketUdp.send(packet);
-               socketUdp.setSoTimeout(5000); // 5 sec
-   
-               packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
-               socketUdp.receive(packet);
-               bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-               in = new ObjectInputStream(bIn);
-   
-               String res = (String) in.readObject();
-               if (res.equalsIgnoreCase("NOT OK")) {
-                  System.out.println("Nao foi possivel listar os canais!");
-               } else {
-                  splitStr = (res.trim().split(":"));
-                  System.out.println("  Lista dos utilizadores:");
-                  
-                  for(int i = 0, j = 1; i < splitStr.length; j++) {
-                     System.out.format("%d %15s\t\t%15s", j, splitStr[i++], splitStr[i++]);
-                  }
-               }
-               continue;
+               String listusers = "LIST USERS";
+               
+               msgEnvio = new Msg(user.getUsername(), listusers, canal);
+               
             }
             else if (teclado.contains("/help")) {
                System.out.println("\n HELP:" +
                                           "\n\n/fich [caminho do ficheiro]" +
                                           "\n\tEnvia ficheiro" +
-                                          "\n\n/canal [nome do canal] [password]" +
+                                          "\n\n/thischannel" +
+                                          "\n\tMostra o canal atual" +
+                                          "\n\n/channel [nome do canal] [password]" +
                                           "\n\tTroca de canal" +
                                           "\n\n/pm [username]" +
                                           "\n\tEnvia mensagem privada para [username]" +
@@ -513,4 +387,5 @@ public class Main {
          }
       }
    }
+   
 }
