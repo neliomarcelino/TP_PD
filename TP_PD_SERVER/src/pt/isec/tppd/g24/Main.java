@@ -109,7 +109,7 @@ public class Main {
          if (addr.equals("0.0.0.0"))
             addr = "127.0.0.1";
          esteServer = new InfoServer(addr, portUdp, portTcp);
-         (tUdp = new ThreadUDP(esteServer, listaServers, socketUdp, stmt)).start();
+         (tUdp = new ThreadUDP(esteServer, listaServers, socketUdp, stmt, group, portMulti)).start();
          (tMulti = new ThreadMulticast(socketMulti, listaServers, esteServer, stmt, listaDeClientes)).start();
          (tPing = new ThreadPing(30, group, portMulti, listaServers, socketUdp, esteServer)).start();
          

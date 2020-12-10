@@ -138,7 +138,38 @@ public class ThreadMulticast extends Thread {
                             pkt.setLength(buff.size());
                             //System.out.println(pkt.getAddress().getHostAddress() + ":" + pkt.getPort());
                             s.send(pkt);
-                        }
+                        }else if(((String) obj).contains("REGISTO")){
+							String[] splitStr = ((String) obj).trim().split(":");
+							String[] splitServer = splitStr[4].trim().split("\\s+");
+							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
+								stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "');");
+								System.out.println("Registo de utilizador ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "') efetuado com sucesso!");
+							}
+						}else if(((String) obj).contains("NEW CANAL")){
+							String[] splitStr = ((String) obj).trim().split(":");
+							String[] splitServer = splitStr[5].trim().split("\\s+");
+							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
+								stmt.executeUpdate("INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "', '" + splitStr[4] + "');");
+								System.out.println("Utilizador '" + splitStr[4] + "' criou o canal '" + splitStr[1] + "' com sucesso!");
+							}
+						}else if(((String) obj).contains("EDIT CANAL")){
+							String[] splitStr = ((String) obj).trim().split(":");
+							String[] splitServer = splitStr[5].trim().split("\\s+");
+							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
+								stmt.executeUpdate("UPDATE canais " +
+                                                       "SET descricao = '" + splitStr[1] + "', " +
+                                                       "password = '" + splitStr[2] + "', " +
+                                                       "admin = '" + splitStr[3] + "' " +
+                                                       "WHERE upper(nome) = upper('" + splitStr[4] + "');");
+							}
+						}else if(((String) obj).contains("DELETE CANAL")){
+							String[] splitStr = ((String) obj).trim().split(":");
+							String[] splitServer = splitStr[3].trim().split("\\s+");
+							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
+								stmt.executeUpdate("DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + splitStr[1] + "');");
+								System.out.println("User '" + splitStr[2] + "' eliminou canal '" + splitStr[1] + "'");
+							}
+						}
                     }
                 }catch(ClassNotFoundException e){
                     System.out.println();

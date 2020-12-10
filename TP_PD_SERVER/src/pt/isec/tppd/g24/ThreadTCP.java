@@ -140,6 +140,15 @@ public class ThreadTCP extends Thread {
                         str.append("NAME IN USE").append(":").append(nome);
                      } else {
                         if (stmt.executeUpdate("INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');") >= 1) {
+						   socketUdp = new DatagramSocket();
+						   bOut = new ByteArrayOutputStream();
+						   out = new ObjectOutputStream(bOut);
+               
+						   out.writeUnshared("NEW CANAL:"+nome+":"+descricao+":"+password+":"+admin+":"+esteServer);
+						   out.flush();
+               
+						   packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+						   socketUdp.send(packet);
                            str.append("OK").append(":").append(nome);
                            System.out.println("Utilizador '" + admin + "' criou o canal '" + nome + "' com sucesso!");
                         } else {
@@ -178,6 +187,15 @@ public class ThreadTCP extends Thread {
                                                        "password = '" + password + "', " +
                                                        "admin = '" + admin + "' " +
                                                        "WHERE upper(nome) = upper('" + nome + "');") >= 1) {
+						   socketUdp = new DatagramSocket();
+						   bOut = new ByteArrayOutputStream();
+						   out = new ObjectOutputStream(bOut);
+               
+						   out.writeUnshared("EDIT CANAL:"+descricao+":"+password+":"+admin+":"+nome+":"+esteServer);
+						   out.flush();
+               
+						   packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+						   socketUdp.send(packet);
                            str.append("OK").append(":").append(nome);
                         }
                      } else {
@@ -217,6 +235,15 @@ public class ThreadTCP extends Thread {
                      }
                      if (conf_admin && conf_name) {
                         if (stmt.executeUpdate("DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + nome + "');") >= 1) {
+						   socketUdp = new DatagramSocket();
+						   bOut = new ByteArrayOutputStream();
+						   out = new ObjectOutputStream(bOut);
+               
+						   out.writeUnshared("DELETE CANAL:"+nome+":"+user+":"+esteServer);
+						   out.flush();
+               
+						   packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+						   socketUdp.send(packet);
                            str.append("OK").append(":").append(nome);
                            System.out.println("User '" + user + "' eliminou canal '" + nome + "'");
                         } else {

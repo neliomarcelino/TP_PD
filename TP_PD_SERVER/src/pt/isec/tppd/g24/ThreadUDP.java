@@ -1,10 +1,7 @@
 package pt.isec.tppd.g24;
 
 import java.io.*;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.ServerSocket;
-import java.net.SocketException;
+import java.net.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -18,13 +15,17 @@ public class ThreadUDP extends Thread {
    private InfoServer esteServer;
    private DatagramSocket socket;
    private Statement stmt;
+   private InetAddress group;
+   private int portMulti;
    
-   public ThreadUDP(InfoServer esteServer, List<InfoServer> listaServers, DatagramSocket socket, Statement stmt) {
+   public ThreadUDP(InfoServer esteServer, List<InfoServer> listaServers, DatagramSocket socket, Statement stmt, InetAddress group, int portMulti) {
       this.esteServer = esteServer;
       this.listaServers = listaServers;
       running = true;
       this.socket = socket;
       this.stmt = stmt;
+	  this.group = group;
+	  this.portMulti = portMulti;
    }
    
    @Override
@@ -103,9 +104,19 @@ public class ThreadUDP extends Thread {
                         out.writeUnshared("USERNAME IN USE");
                         System.out.println("Registo efetuado sem sucesso! Username '" + username + "' ja em uso");
                      } else {
-                        if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD) VALUES ('" + username + "', '" + name + "', '" + password + "');") >= 1)
-                           out.writeUnshared("OK");
-                        System.out.println("Registo de utilizador ('" + username + "', '" + name + "', '" + password + "') efetuado com sucesso!");
+						if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD) VALUES ('" + username + "', '" + name + "', '" + password + "');")>= 1){
+						   out.writeUnshared("REGISTO:"+username+":"+name+":"+password+":"+esteServer);
+						   out.flush();
+						   DatagramPacket packetMulti = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+						   socket.send(packetMulti);
+						
+						   bOut = new ByteArrayOutputStream();
+						   out = new ObjectOutputStream(bOut);
+						   out.writeUnshared("OK");
+						   System.out.println("Registo de utilizador ('" + username + "', '" + name + "', '" + password + "') efetuado com sucesso!");
+                        } else {
+                           out.writeUnshared("NOT OK");
+                        }
                      }
                   }
                   
