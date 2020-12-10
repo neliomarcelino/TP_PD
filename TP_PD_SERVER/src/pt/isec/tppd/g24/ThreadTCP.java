@@ -139,7 +139,7 @@ public class ThreadTCP extends Thread {
                      if (conf) {
                         str.append("NAME IN USE").append(":").append(nome);
                      } else {
-                        if (stmt.executeUpdate("INSERT INTO canais VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');") >= 1) {
+                        if (stmt.executeUpdate("INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');") >= 1) {
                            str.append("OK").append(":").append(nome);
                            System.out.println("Utilizador '" + admin + "' criou o canal '" + nome + "' com sucesso!");
                         } else {

@@ -398,6 +398,9 @@ public class Main {
                                           "\n\tLista todos os utilizadores" +
                                           "\n\n");
                continue;
+            } else if (canal.equalsIgnoreCase("")) {
+                  System.out.println("Nao está em nenhum canal!");
+                  continue;
             } else {
                msgEnvio = new Msg(user.getUsername(), teclado, canal);
             }

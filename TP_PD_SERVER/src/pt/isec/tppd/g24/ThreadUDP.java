@@ -103,7 +103,7 @@ public class ThreadUDP extends Thread {
                         out.writeUnshared("USERNAME IN USE");
                         System.out.println("Registo efetuado sem sucesso! Username '" + username + "' ja em uso");
                      } else {
-                        if (stmt.executeUpdate("INSERT INTO UTILIZADORES VALUES ('" + username + "', '" + name + "', '" + password + "');") >= 1)
+                        if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD) VALUES ('" + username + "', '" + name + "', '" + password + "');") >= 1)
                            out.writeUnshared("OK");
                         System.out.println("Registo de utilizador ('" + username + "', '" + name + "', '" + password + "') efetuado com sucesso!");
                      }
