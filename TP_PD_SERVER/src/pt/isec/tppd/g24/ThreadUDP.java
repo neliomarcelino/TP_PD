@@ -91,7 +91,7 @@ public class ThreadUDP extends Thread {
                      String username = splitStr[1];
                      String name = splitStr[2];
                      String password = splitStr[3];
-                     ResultSet rs = stmt.executeQuery("SELECT USERNAME FROM USERS;");
+                     ResultSet rs = stmt.executeQuery("SELECT USERNAME FROM UTILIZADORES;");
                      boolean usernameInUse = false;
                      
                      while (rs.next()) {
@@ -103,7 +103,7 @@ public class ThreadUDP extends Thread {
                         out.writeUnshared("USERNAME IN USE");
                         System.out.println("Registo efetuado sem sucesso! Username '" + username + "' ja em uso");
                      } else {
-                        if (stmt.executeUpdate("INSERT INTO USERS VALUES ('" + username + "', '" + name + "', '" + password + "');") >= 1)
+                        if (stmt.executeUpdate("INSERT INTO UTILIZADORES VALUES ('" + username + "', '" + name + "', '" + password + "');") >= 1)
                            out.writeUnshared("OK");
                         System.out.println("Registo de utilizador ('" + username + "', '" + name + "', '" + password + "') efetuado com sucesso!");
                      }
@@ -126,7 +126,7 @@ public class ThreadUDP extends Thread {
                   } else {
                      String nome = splitStr[1];
                      String password = splitStr[2];
-                     ResultSet rs = stmt.executeQuery("SELECT USERNAME, PASSWORD FROM USERS;");
+                     ResultSet rs = stmt.executeQuery("SELECT USERNAME, PASSWORD FROM UTILIZADORES;");
                      boolean conf = false;
                      while (rs.next()) {
                         if (rs.getString("USERNAME").equalsIgnoreCase(nome)) {

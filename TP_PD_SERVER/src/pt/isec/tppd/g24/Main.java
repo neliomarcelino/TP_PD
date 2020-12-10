@@ -68,16 +68,19 @@ public class Main {
             return;
          }
          
-         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS users" +
-                                    "(username VARCHAR(255) NOT NULL UNIQUE, " +
-                                    " name VARCHAR(255) NOT NULL, " +
+         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS utilizadores (" +
+                                    " username VARCHAR(255) NOT NULL UNIQUE, " +
+                                    " nome VARCHAR(255) NOT NULL, " +
                                     " password VARCHAR(255) NOT NULL, " +
+                                    " canal VARCHAR(255), " +
+                                    " imagem VARCHAR(255), " +
                                     " timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                                     " PRIMARY KEY ( username ))");
          
          stmt.executeUpdate("CREATE TABLE IF NOT EXISTS mensagens (" +
-                                    " username VARCHAR(255)  NOT NULL, " +
-                                    " conteudo VARCHAR(255)  not NULL, " +
+                                    " remetente VARCHAR(255)  NOT NULL, " +
+                                    " conteudo VARCHAR(255)  NOT NULL, " +
+                                    " destinatario VARCHAR(255) NOT NULL, " +
                                     " timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP );");
          
          stmt.executeUpdate("CREATE TABLE IF NOT EXISTS canais (" +

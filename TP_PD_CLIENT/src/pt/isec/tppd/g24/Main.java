@@ -35,7 +35,7 @@ public class Main {
       
       int op = 0;
       User user = new User();
-      Boolean conf;
+      Boolean conf = false;
       
       BufferedReader inTeclado = new BufferedReader(new InputStreamReader(System.in));
       String EXIT = "EXIT";
@@ -128,10 +128,22 @@ public class Main {
                do {
                   System.out.print("Nome: ");
                   user.setName(inTeclado.readLine());
+                  if(user.getName().contains("=") || user.getName().contains(":")) {
+                     System.out.println("Nome do utilizador tem caracteres invalidos!");
+                     continue;
+                  }
                   System.out.print("Username: ");
                   user.setUsername(inTeclado.readLine());
+                  if(user.getUsername().contains("=") || user.getUsername().contains(":")) {
+                     System.out.println("Username tem caracteres invalidos!");
+                     continue;
+                  }
                   System.out.print("Password: ");
                   user.setPassword(inTeclado.readLine());
+                  if(user.getPassword().contains("=") || user.getPassword().contains(":")) {
+                     System.out.println("Password tem caracteres invalidos!");
+                     continue;
+                  }
                   
                   String registo = "REGISTA" + ":" + user.getUsername() + ":" + user.getName() + ":" + user.getPassword();
                   
@@ -188,7 +200,7 @@ public class Main {
                   System.out.println("Erro no numero de argumentos");
                   continue;
                }
-			   if (canal.equalsIgnoreCase("")) {
+               if (canal.equalsIgnoreCase("")) {
                   System.out.println("Nao está em nenhum canal!");
                   continue;
                }
@@ -200,19 +212,18 @@ public class Main {
                socket = new ServerSocket(0);
                msgEnvio = new Msg(user.getUsername(), teclado + " " + socket.getLocalPort(), canal);
                
-            } else if(teclado.contains("/get_fich")){
-                    splitStr = teclado.trim().split("\\s+");
-                    if(splitStr.length != 2){
-                        System.out.println("Erro no numero de argumentos");
-                        continue;
-                    }
-					if (canal.equalsIgnoreCase("")) {
-						System.out.println("Nao está em nenhum canal!");
-						continue;
-					}
-                    msgEnvio = new Msg(user.getUsername(), teclado, canal);
-            }
-            else if (teclado.contains("/channel")) {
+            } else if (teclado.contains("/get_fich")) {
+               splitStr = teclado.trim().split("\\s+");
+               if (splitStr.length != 2) {
+                  System.out.println("Erro no numero de argumentos");
+                  continue;
+               }
+               if (canal.equalsIgnoreCase("")) {
+                  System.out.println("Nao está em nenhum canal!");
+                  continue;
+               }
+               msgEnvio = new Msg(user.getUsername(), teclado, canal);
+            } else if (teclado.contains("/channel")) {
                splitStr = teclado.trim().split("\\s");
                if (splitStr.length != 3) {
                   System.out.println("Erro nos argumentos");
@@ -223,17 +234,17 @@ public class Main {
                String changeChannel = "CHANGE CHANNEL" + ":" + nome + ":" + password;
                msgEnvio = new Msg(user.getUsername(), changeChannel, canal);
                
-            } else if(teclado.contains("/thischannel")) {
+            } else if (teclado.contains("/thischannel")) {
                System.out.println("Canal atual: " + canal);
                continue;
             } else if (teclado.contains("/createchannel")) {
                splitStr = teclado.trim().split("\\s");
-
+               
                String nome, descricao, password;
                System.out.println("Criar canal");
                System.out.print("Nome do canal: ");
                nome = inTeclado.readLine();
-               if(nome.contains(":")) {
+               if (nome.contains(":")) {
                   System.out.println("Nao e possivel criar canais com o simbolo ':'");
                   continue;
                }
@@ -246,8 +257,7 @@ public class Main {
                
                msgEnvio = new Msg(user.getUsername(), createChannel, canal);
                
-            }
-            else if(teclado.contains("/editchannel")) {
+            } else if (teclado.contains("/editchannel")) {
                splitStr = teclado.trim().split("\\s");
                if (splitStr.length != 2) {
                   System.out.println("Erro nos argumentos");
@@ -256,32 +266,32 @@ public class Main {
                
                String nome = splitStr[1];
                String editChannel = "EDIT CHANNEL" + ":" + nome + ":" + user.getUsername();
-   
+               
                bOut = new ByteArrayOutputStream();
                out = new ObjectOutputStream(bOut);
-   
+               
                out.writeUnshared(editChannel);
                out.flush();
-   
+               
                packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
-   
+               
                socketUdp.send(packet);
                socketUdp.setSoTimeout(5000); // 5 sec
-   
+               
                packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
                socketUdp.receive(packet);
                bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                in = new ObjectInputStream(bIn);
-   
+               
                String res = (String) in.readObject();
-               if(res.equalsIgnoreCase("NOT ADMIN")) {
+               if (res.equalsIgnoreCase("NOT ADMIN")) {
                   System.out.println("Apenas o admin pode editar os canais");
                   continue;
-               }else if (res.equalsIgnoreCase("NOT OK")) {
+               } else if (res.equalsIgnoreCase("NOT OK")) {
                   System.out.println("ERRO!");
                   continue;
                }
-   
+               
                System.out.println("Edita canal " + nome + ":");
                System.out.println("Descricao: ");
                String descricao = inTeclado.readLine();
@@ -290,48 +300,94 @@ public class Main {
                System.out.println("Admin: ");
                String admin = inTeclado.readLine();
                editChannel = "EDIT CHANNEL" + ":" + nome + ":" + descricao + ":" + password + ":" + admin;
-   
+               
                msgEnvio = new Msg(user.getUsername(), editChannel, canal);
-   
-            }
-            else if(teclado.contains("/delchannel")) {
+               
+            } else if (teclado.contains("/delchannel")) {
                splitStr = teclado.trim().split("\\s");
                
                String nome = splitStr[1];
-               if(nome.contains(":")) {
+               if (nome.contains(":")) {
                   System.out.println("Erro! Nao existe canal com o nome '" + nome + "'");
                   continue;
                }
-   
+               
                String deleteChannel = "DELETE CHANNEL" + ":" + nome;
-   
+               
                msgEnvio = new Msg(user.getUsername(), deleteChannel, canal);
-
-            }
-            else if (teclado.contains("/listchannels")) {
-               String listchannels = "LIST CHANNELS";
                
-               msgEnvio = new Msg(user.getUsername(), listchannels, canal);
-
-            }
-            else if (teclado.contains("/listusers")){
-               String listusers = "LIST USERS";
+            } else if (teclado.contains("/list")) {
+               splitStr = teclado.trim().split("\\s");
+               if(splitStr.length == 1) {
+                  System.out.println("Modo de uso: /list [channels|users|messages] [fields](opcional)");
+                  System.out.println("\tFields dos canais: nome, descricao, admin, num_utilizadores, num_mensagens, num_ficheiros");
+                  System.out.println("\tFields dos utilizadores: nome, username, canal");
+                  System.out.println("\tFields das mensagens: n_mensagens=[num mensagens a listar], remetente=[nome do utilizador], destinatario=[nome do utilizador|nome do canal]");
+                  continue;
+               }
+               StringBuilder strBuild = new StringBuilder();
+               strBuild.append("LIST").append(":");
                
-               msgEnvio = new Msg(user.getUsername(), listusers, canal);
+               String listWhat = splitStr[1];
                
-            }
-            else if (teclado.contains("/help")) {
+               if (listWhat.equalsIgnoreCase("channels")) {
+                  strBuild.append("CHANNELS").append(":");
+                  
+                  if (splitStr.length > 2) {
+                     for (int i = 2; i < splitStr.length; i++) {
+                        strBuild.append(splitStr[i]).append(",");
+                     }
+                     strBuild.setLength(strBuild.length() - 1);
+                  } else {
+                     strBuild.append("DEFAULT");
+                  }
+                  
+               } else if (listWhat.equalsIgnoreCase("users")) {
+                  strBuild.append("USERS").append(":");
+                  
+                  if (splitStr.length > 2) {
+                     for (int i = 2; i < splitStr.length; i++) {
+                        strBuild.append(splitStr[i]).append(",");
+                     }
+                     strBuild.setLength(strBuild.length() - 1);
+                  } else {
+                     strBuild.append("DEFAULT");
+                  }
+                  
+               } else if (listWhat.equalsIgnoreCase("messages")) {
+                  strBuild.append("MESSAGES").append(":");
+                  
+                  if (splitStr.length > 2) {
+                     for (int i = 2; i < splitStr.length; i++) {
+                        strBuild.append(splitStr[i]).append(",");
+                     }
+                     strBuild.setLength(strBuild.length() - 1);
+                  } else {
+                     strBuild.append("DEFAULT");
+                  }
+               } else {
+                  System.out.println("Erro nos argumentos");
+                  System.out.println("Modo de uso: /list [channels|users|messages] [fields](opcional)");
+                  System.out.println("\tFields dos canais: nome, descricao, admin, num_utilizadores, num_mensagens, num_ficheiros");
+                  System.out.println("\tFields dos utilizadores: nome, username, canal");
+                  System.out.println("\tFields das mensagens: n_mensagens=[num mensagens a listar], remetente=[nome do utilizador], destinatario=[nome do utilizador|nome do canal]");
+                  continue;
+               }
+               
+               msgEnvio = new Msg(user.getUsername(), strBuild.toString(), canal);
+               
+            } else if (teclado.contains("/help")) {
                System.out.println("\n HELP:" +
                                           "\n\n/fich [caminho do ficheiro]" +
                                           "\n\tEnvia ficheiro" +
                                           "\n\n/thischannel" +
                                           "\n\tMostra o canal atual" +
-                                          "\n\n/channel [nome do canal] [password]" +
+                                          "\n\n/channel [channel name] [password]" +
                                           "\n\tTroca de canal" +
                                           "\n\n/pm [username]" +
                                           "\n\tEnvia mensagem privada para [username]" +
-                                          "\n\n/listchannels" +
-                                          "\n\tLista todos os canais existentes" +
+                                          "\n\n/list [channels|users|messages] [fields]" +
+                                          "\n\tLista canais, utilizadores e mensagens" +
                                           "\n\n/createchannel" +
                                           "\n\tCria canal de chat" +
                                           "\n\n/editchannel [nome do canal]" +

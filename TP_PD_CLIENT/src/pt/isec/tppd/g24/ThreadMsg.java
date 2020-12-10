@@ -29,8 +29,8 @@ public class ThreadMsg extends Thread {
       Msg msg;
       ThreadDownload t = null;
       String resp;
-	  File f;
-	  int j;
+      File f;
+      int j;
       if (socketTcp == null || ! running) {
          return;
       }
@@ -54,19 +54,19 @@ public class ThreadMsg extends Thread {
                      System.out.println("Ficheiro nao existe no servidor/canal.");
                      continue;
                   }
-				  fileName = splitStr[1];
-				  String[] splitFilename = splitStr[1].trim().split("\\.");
-				  f = new File(System.getProperty("user.dir") + File.separator + fileName);
-				  j = 1;
-				  while(f.isFile()){
-				  	 fileName = splitFilename[0] + "(" + j + ")";
-					 for(int k = 1; k < splitFilename.length; k++){
-						fileName += "." + splitFilename[k];
-					 }
-					 f = new File(System.getProperty("user.dir")+ File.separator + fileName);
-					 j++;
-				  }
-                  (t = new ThreadDownload(socketTcp.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName).start();
+                  String fileName = splitStr[1];
+                  String[] splitFilename = splitStr[1].trim().split("\\.");
+                  f = new File(System.getProperty("user.dir") + File.separator + fileName);
+                  j = 1;
+                  while (f.isFile()) {
+                     fileName = splitFilename[0] + "(" + j + ")";
+                     for (int k = 1; k < splitFilename.length; k++) {
+                        fileName += "." + splitFilename[k];
+                     }
+                     f = new File(System.getProperty("user.dir") + File.separator + fileName);
+                     j++;
+                  }
+                  new ThreadDownload(socketTcp.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName).start();
                   continue;
                   
                } else if (resp.contains("CHANGE CHANNEL")) {
@@ -81,7 +81,7 @@ public class ThreadMsg extends Thread {
                   }
                   continue;
                   
-               } else if(resp.contains("CREATE CHANNEL")) {
+               } else if (resp.contains("CREATE CHANNEL")) {
                   String[] splitStr = resp.trim().split(":");
                   String status_code = splitStr[1];
                   
@@ -94,20 +94,20 @@ public class ThreadMsg extends Thread {
                   }
                   continue;
                   
-               } else if(resp.contains("EDIT CHANNEL")) {
+               } else if (resp.contains("EDIT CHANNEL")) {
                   String[] splitStr = resp.trim().split(":");
                   String status_code = splitStr[1];
-   
+                  
                   if (status_code.equalsIgnoreCase("OK")) {
                      System.out.println("Canal '" + splitStr[2] + "' editado com sucesso!");
-                  } else if(status_code.equalsIgnoreCase("ADMIN NOT EXISTS")) {
+                  } else if (status_code.equalsIgnoreCase("ADMIN NOT EXISTS")) {
                      System.out.println("Erro! Admin '" + splitStr[2] + "' nao existe no sistema");
                   } else if (status_code.equalsIgnoreCase("NOT OK")) {
                      System.out.println("Erro! Nao foi possivel editar o canal");
                   }
                   continue;
                   
-               } else if(resp.contains("DELETE CHANNEL")) {
+               } else if (resp.contains("DELETE CHANNEL")) {
                   String[] splitStr = resp.trim().split(":");
                   String status_code = splitStr[1];
                   
@@ -115,40 +115,67 @@ public class ThreadMsg extends Thread {
                      System.out.println("Canal '" + splitStr[2] + "' eliminado com sucesso!");
                   } else if (status_code.equalsIgnoreCase("NOT ADMIN")) {
                      System.out.println("Erro! Apenas o admin pode eliminar o canal!");
-                  } else if(status_code.equalsIgnoreCase("SERVER UNKNOWN")) {
-                     System.out.println("Erro! Nao existe canal com o nome '" + splitStr[2] +"'");
+                  } else if (status_code.equalsIgnoreCase("SERVER UNKNOWN")) {
+                     System.out.println("Erro! Nao existe canal com o nome '" + splitStr[2] + "'");
                   } else if (status_code.equalsIgnoreCase("NOT OK")) {
                      System.out.println("Erro! Nao foi possivel eliminar o canal");
                   }
                   continue;
                   
-               } else if(resp.contains("LIST CHANNELS")) {
+               } else if (resp.contains("LIST")) {
                   String[] splitStr = resp.split(":");
-                  String status_code = splitStr[1];
+                  String listWhat = splitStr[1];
+                  String status_code = splitStr[2];
+                  int k = 1;
                   
-                  if (status_code.equalsIgnoreCase("NO CHANNELS")) {
-                     System.out.println("Nao existem canais criados.");
-                  } else {
-                     System.out.println("  Lista dos canais:");
-                     System.out.format("  %15s\t\t%15s\n", "Nome", "Admin");
-                     for(int i = 1, j = 1; i < splitStr.length; j++) {
-                        System.out.format("%d %15s\t\t%15s\n", j, splitStr[i++], splitStr[i++]);
+                  if (listWhat.equalsIgnoreCase("CHANNELS")) {
+                     if (status_code.equalsIgnoreCase("NO CHANNELS")) {
+                        System.out.println("Nao existem canais criados.");
+                     } else {
+                        String[] fields = splitStr[2].split(",");
+                        String[] field_values = splitStr[3].split(",");
+                        
+                        System.out.println("Lista dos canais:");
+                        for (int i = 0; i < field_values.length; ) {
+                           System.out.println("\nCanal " + k++);
+                           for (j = 0; j < fields.length; j++) {
+                              System.out.println("\t" + fields[j] + ": " + field_values[i++]);
+                           }
+                        }
                      }
-                  }
-                  continue;
-               } else if(resp.contains("LIST USERS")) {
-                  String[] splitStr = resp.split(":");
-                  String status_code = splitStr[1];
+                  } else if (listWhat.equalsIgnoreCase("USERS")) {
+                     if(status_code.equalsIgnoreCase("NOT OK")){
+                        System.out.println("Nao foi possivel lista os utilizadores.");
+                     }else{
+                        String[] fields = splitStr[2].split(",");
+                        String[] field_values = splitStr[3].split(",");
    
-                  if (status_code.equalsIgnoreCase("NOT OK")) {
-                     System.out.println("Erro! Nao foi possivel listar os users!");
-                  } else {
-                     System.out.println("  Lista dos utilizadores:");
+                        System.out.println("Lista dos users:");
+                        for (int i = 0; i < field_values.length; ) {
+                           System.out.println("\nUser " + k++);
+                           for (j = 0; j < fields.length; j++) {
+                              System.out.println("\t" + fields[j] + ": " + field_values[i++]);
+                           }
+                        }
+                     }
+                  } else if (listWhat.equalsIgnoreCase("MESSAGES")) {
+                     if (status_code.equalsIgnoreCase("NO MESSAGES FOUND")) {
+                        System.out.println("Nao foram encontradas mensagens.");
+                     } else {
+                        String[] fields = splitStr[2].split(",");
+                        String[] field_values = splitStr[3].split(",");
       
-                     for(int i = 1, j = 1; i < splitStr.length; j++) {
-                        System.out.format("%d %15s\t\t%15s\n", j, splitStr[i++], splitStr[i++]);
+                        System.out.println("Mensagens:");
+                        for (int i = 0; i < field_values.length; ) {
+                           System.out.println("\nMensagem " + k++);
+                           for (j = 0; j < fields.length; j++) {
+                              System.out.println("\t" + fields[j] + ": " + field_values[i++]);
+                           }
+                        }
                      }
                   }
+                  
+                  
                   continue;
                }
             }
