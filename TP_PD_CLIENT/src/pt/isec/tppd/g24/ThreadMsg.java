@@ -66,7 +66,7 @@ public class ThreadMsg extends Thread {
                      f = new File(System.getProperty("user.dir") + File.separator + fileName);
                      j++;
                   }
-                  new ThreadDownload(socketTcp.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName).start();
+                  (t = new ThreadDownload(socketTcp.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName)).start();
                   continue;
                   
                } else if (resp.contains("CHANGE CHANNEL")) {
