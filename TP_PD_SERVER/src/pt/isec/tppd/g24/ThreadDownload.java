@@ -23,8 +23,11 @@ public class ThreadDownload extends Thread{
     public void run(){
         File localDirectory;
         String localFilePath = null;
-        Socket socket = null;
+        DatagramSocket socket = null;
+		DatagramPacket packet, enviaPacket;
+		InetAddress addr;
         InputStream in;
+		String envia = "PRONTO";
         FileOutputStream localFileOutputStream = null;
         //int contador = 0;
         ObjectOutputStream out;
@@ -55,16 +58,29 @@ public class ThreadDownload extends Thread{
             }
 
             try{
-                socket = new Socket(serverAddr, serverPort);
-                socket.setSoTimeout(5000);
+				addr = InetAddress.getByName(serverAddr);
+                socket = new DatagramSocket();
+                socket.setSoTimeout(10000);
 
-                byte []buffer = new byte[MAX_SIZE];
-                in = socket.getInputStream();
-                int nbytes;
-
-                while((nbytes = in.read(buffer)) > 0)
-                    localFileOutputStream.write(buffer, 0, nbytes);
-
+                packet = new DatagramPacket(envia.getBytes(), envia.length(), addr, serverPort);
+                socket.send(packet);
+                
+                //System.out.println(socket.getReceiveBufferSize());
+                
+                do{
+                    
+                    packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
+                    socket.receive(packet);
+                    
+                    if(packet.getPort() == serverPort && packet.getAddress().equals(addr)){
+                        localFileOutputStream.write(packet.getData(), 0, packet.getLength());
+						
+						enviaPacket = new DatagramPacket("OK".getBytes(), "OK".length(), addr, serverPort);
+						socket.send(enviaPacket);
+                    }
+                    
+                }while(packet.getLength() > 0);
+                
                 System.out.println("Transferencia concluida.");
                
             }catch(UnknownHostException e){
@@ -79,11 +95,9 @@ public class ThreadDownload extends Thread{
                 System.out.println("Ocorreu um erro no acesso ao socket ou ao ficheiro local " + localFilePath +":\n\t"+e);
             }
         }finally{
-            try{
                 if(socket != null){
                     socket.close();
                 }
-            }catch(IOException e){}
             if(localFileOutputStream != null){
                 try{
                     localFileOutputStream.close();

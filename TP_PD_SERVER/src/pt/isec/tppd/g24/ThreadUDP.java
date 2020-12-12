@@ -2,11 +2,8 @@ package pt.isec.tppd.g24;
 
 import java.io.*;
 import java.net.*;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 
 public class ThreadUDP extends Thread {
    protected boolean running;
@@ -44,7 +41,7 @@ public class ThreadUDP extends Thread {
       int carga;
       boolean menosCarga;
       ThreadUpload t;
-      
+      Sincronizacao sync;
       try {
          System.out.println("UDP Thread iniciado...");
          while (running) {
@@ -55,8 +52,73 @@ public class ThreadUDP extends Thread {
             in = new ObjectInputStream(bIn);
             
             obj = in.readObject();
-            
-            if (obj instanceof InfoServer) {
+			
+			if (obj instanceof Sincronizacao) {
+			   ArrayList<String> users = new ArrayList<String>(), mensagens = new ArrayList<String>(), canais = new ArrayList<String>();
+               sync = (Sincronizacao) obj;
+			   ResultSet rs = null;
+				
+			   String nome,password,username,canal,imagem,remetente,conteudo,destinatario,descricao,admin;
+			   ArrayList<Timestamp> tusers = new ArrayList<Timestamp>(), tmensagens = new ArrayList<Timestamp>(), tcanais = new ArrayList<Timestamp>();
+			   Timestamp timestamp;
+			   if(sync.getUsers()!=null)
+					rs = stmt.executeQuery("SELECT * FROM UTILIZADORES WHERE TIMESTAMP > '" + sync.getUsers() + "';");
+			   else
+					rs = stmt.executeQuery("SELECT * FROM UTILIZADORES;");
+			   if(rs != null)
+			   while(rs.next()){
+					username = rs.getString("username");
+					nome = rs.getString("nome");
+					password = rs.getString("password");
+					canal = rs.getString("canal");
+					timestamp = rs.getTimestamp("timestamp");
+				   
+				    users.add(username+":"+nome+":"+password+":"+canal);
+					tusers.add(timestamp);
+			   }
+			   if(sync.getMensagens()!=null)
+			        rs = stmt.executeQuery("SELECT * FROM MENSAGENS WHERE TIMESTAMP > '" + sync.getMensagens() + "';");
+				else
+					rs = stmt.executeQuery("SELECT * FROM MENSAGENS;");
+			   if(rs != null)
+			   while(rs.next()){
+					remetente = rs.getString("remetente");
+					conteudo = rs.getString("conteudo");
+					destinatario = rs.getString("destinatario");
+					timestamp = rs.getTimestamp("timestamp");
+				   
+				    mensagens.add(remetente+":"+conteudo+":"+destinatario+":");
+					tmensagens.add(timestamp);
+			   }
+			   if(sync.getCanais()!=null)
+			        rs = stmt.executeQuery("SELECT * FROM CANAIS WHERE TIMESTAMP > '" + sync.getCanais() + "';");
+				else
+					rs = stmt.executeQuery("SELECT * FROM CANAIS;");
+			   if(rs != null)
+			   while(rs.next()){
+					nome = rs.getString("nome");
+					descricao = rs.getString("descricao");
+					password = rs.getString("password");
+					timestamp = rs.getTimestamp("timestamp");
+					admin = rs.getString("admin");
+				   
+				    canais.add(nome+":"+descricao+":"+password+":"+admin);
+					tcanais.add(timestamp);
+			   }
+			   
+			   bOut = new ByteArrayOutputStream();
+               out = new ObjectOutputStream(bOut);
+			   
+			   InfoSincronizacao envia = new InfoSincronizacao(users, mensagens, canais, tusers, tmensagens, tcanais);
+			   
+			   out.writeUnshared(envia);
+			   out.flush();
+			   
+			   receivePacket.setData(bOut.toByteArray());
+               receivePacket.setLength(bOut.size());
+                 
+               socket.send(receivePacket);
+            } else if (obj instanceof InfoServer) {
                regisServer = (InfoServer) obj;
                if (regisServer.getPortUdp() == esteServer.getPortUdp() && regisServer.getPortTcp() == esteServer.getPortTcp() && regisServer.getAddr().equalsIgnoreCase(esteServer.getAddr()))
                   continue;
@@ -68,7 +130,7 @@ public class ThreadUDP extends Thread {
                receivedMsg = (String) obj;
                if (receivedMsg.contains("/fich")) {
                   String[] splitStr = receivedMsg.trim().split("\\s+");
-                  ServerSocket socketfich = new ServerSocket(0);
+                  DatagramSocket socketfich = new DatagramSocket();
 				  (t = new ThreadUpload(socketfich, splitStr[1], splitStr[2])).start();
                   
                   bOut = new ByteArrayOutputStream();
@@ -113,7 +175,6 @@ public class ThreadUDP extends Thread {
 						   bOut = new ByteArrayOutputStream();
 						   out = new ObjectOutputStream(bOut);
 						   out.writeUnshared("OK");
-						   System.out.println("Registo de utilizador ('" + username + "', '" + name + "', '" + password + "') efetuado com sucesso!");
                         } else {
                            out.writeUnshared("NOT OK");
                         }

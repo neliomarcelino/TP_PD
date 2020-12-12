@@ -7,7 +7,7 @@ import java.util.List;
 import java.sql.*;
 
 public class ThreadMulticast extends Thread {
-    public static int MAX_SIZE = 1000000;
+    public static int MAX_SIZE = 10000;
     static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
 
     protected MulticastSocket s;
@@ -85,8 +85,8 @@ public class ThreadMulticast extends Thread {
                         System.out.println(msg.getUsername() + ":" + msg.getConteudo());
 
                         //Guardar msg na Database
-                        sql = "INSERT INTO MENSAGENS (username, conteudo)" +
-                                "VALUES ('" + msg.getUsername() + "','" + msg.getConteudo() + "');";;
+                        sql = "INSERT INTO MENSAGENS (remetente, conteudo, destinatario)" +
+                                "VALUES ('" + msg.getUsername() + "','" + msg.getConteudo() +"','"+ msg.getCanal()+ "');";
 
                         if(stmt.executeUpdate(sql)<1){
                             System.out.println("Entry insertion failed");

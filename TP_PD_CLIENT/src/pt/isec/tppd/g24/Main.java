@@ -1,6 +1,5 @@
 package pt.isec.tppd.g24;
 
-import com.sun.xml.internal.ws.api.config.management.ManagedEndpointFactory;
 
 import java.io.*;
 import java.net.*;
@@ -31,7 +30,7 @@ public class Main {
       String canal = "";
       Msg msgEnvio;
       String teclado;
-      ServerSocket socket = null;
+      DatagramSocket socket = null;
       
       int op = 0;
       User user = new User();
@@ -209,7 +208,7 @@ public class Main {
                   System.out.println("Ficheiro nao esta na directoria:" + System.getProperty("user.dir"));
                   continue;
                }
-               socket = new ServerSocket(0);
+               socket = new DatagramSocket();
                msgEnvio = new Msg(user.getUsername(), teclado + " " + socket.getLocalPort(), canal);
                
             } else if (teclado.contains("/get_fich")) {

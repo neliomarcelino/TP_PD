@@ -1,15 +1,13 @@
 package pt.isec.tppd.g24;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.sql.*;
 
 public class Main {
    static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
+   public static final int BUFSIZE = 10000;
    
    public static void enviaEsteServer(InfoServer esteServer, InetAddress group, int portMulti) throws IOException {
         ByteArrayOutputStream buff;
@@ -91,11 +89,122 @@ public class Main {
                                     " admin VARCHAR(255)  NOT NULL);");
          
          System.out.println("Using database '" + servername + "' on '" + dbUrl + "'");
-         
-         group = InetAddress.getByName("230.30.30.30");
+		 group = InetAddress.getByName("230.30.30.30");
+		 
+		 try {
+			 socketUdp = new DatagramSocket();
+			 
+			 ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+			 ObjectOutputStream out = new ObjectOutputStream(bOut);
+				   
+			 out.writeUnshared("PING");
+			 out.flush();
+			 
+			 DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+			 socketUdp.send(packet);
+			 
+			 socketUdp.setSoTimeout(3000); // 3sec
+			 packet = new DatagramPacket(new byte[BUFSIZE], BUFSIZE);
+			 socketUdp.receive(packet);
+			 
+			 socketUdp.setSoTimeout(0);
+			 
+			 ByteArrayInputStream bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+			 ObjectInputStream in = new ObjectInputStream(bIn);
+				
+			 Object obj = in.readObject();
+			 
+			 InfoServer syncServer = (InfoServer) obj;
+			 
+			 Timestamp users = null;
+			 Timestamp mensagens = null;
+			 Timestamp canais = null;
+			 ResultSet rs;
+			 
+			 rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM utilizadores;");
+			 
+			 if(rs.next()){
+				 users = rs.getTimestamp("timestamp");
+			 }
+			 
+			 rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM mensagens;");
+			 
+			 if(rs.next()){
+				 mensagens = rs.getTimestamp("timestamp");
+			 }
+			 
+			 rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM canais;");
+			 
+			 if(rs.next()){
+				 canais = rs.getTimestamp("timestamp");
+			 }
+			 
+			 Sincronizacao sincronizar = new Sincronizacao(users, mensagens, canais);
+			 
+			 bOut = new ByteArrayOutputStream();
+			 out = new ObjectOutputStream(bOut);
+				   
+			 out.writeUnshared(sincronizar);
+			 out.flush();
+			 
+			 packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(syncServer.getAddr()), syncServer.getPortUdp());
+			 socketUdp.send(packet);
+			 
+			 packet = new DatagramPacket(new byte[BUFSIZE], BUFSIZE);
+			 socketUdp.receive(packet);
+			 
+			 bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+			 in = new ObjectInputStream(bIn);
+				
+			 obj = in.readObject();
+			 
+			 InfoSincronizacao resultado = (InfoSincronizacao) obj; 
+			 
+			 ArrayList<String> tratalist = resultado.getListUser(); 
+			 ArrayList<Timestamp> trataTimestamp = resultado.getListTimeUser(); 
+			 
+			 for(int j = 0; j < tratalist.size(); j++){
+				 String[] splitStr = tratalist.get(j).split(":");
+				 stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL, TIMESTAMP) VALUES ('" + splitStr[0] + "', '" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "', '" + trataTimestamp.get(j) +"');");
+			 }
+			 
+			 tratalist = resultado.getListMensagens(); 
+			 trataTimestamp = resultado.getListTimeMensagens(); 
+			 
+			 for(int j = 0; j < tratalist.size(); j++){
+				 String[] splitStr = tratalist.get(j).split(":");
+				 stmt.executeUpdate("INSERT INTO MENSAGENS (REMETENTE, CONTEUDO, DESTINATARIO, TIMESTAMP) VALUES ('" + splitStr[0] + "', '" + splitStr[1] + "', '" + splitStr[2] + "', '" + trataTimestamp.get(j) +"');");
+				 String[] splitFich = splitStr[1].split("\\s+");
+				 if(splitFich[0].contains("/fich")){
+					  bOut = new ByteArrayOutputStream();
+					  out = new ObjectOutputStream(bOut);
+					  out.writeUnshared(splitFich[0] + " " + splitFich[1] + " " + splitStr[2]);
+			          out.flush();
+					  
+					  packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(syncServer.getAddr()), syncServer.getPortUdp());
+					  socketUdp.send(packet);
+					  
+					  packet = new DatagramPacket(new byte[BUFSIZE], BUFSIZE);
+                      socketUdp.receive(packet);
+                      bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+					  in = new ObjectInputStream(bIn);
+
+                      (new ThreadDownload(syncServer.getAddr(), (int) in.readObject(), splitStr[1], splitStr[2])).start();
+				 }
+			 }
+			 
+			 tratalist = resultado.getListCanais(); 
+			 trataTimestamp = resultado.getListTimeCanais(); 
+			 
+			 for(int j = 0; j < tratalist.size(); j++){
+				 String[] splitStr = tratalist.get(j).split(":");
+				 
+				 stmt.executeUpdate("INSERT INTO CANAIS (NOME, DESCRICAO, PASSWORD, TIMESTAMP, ADMIN) VALUES ('" + splitStr[0] + "', '" + splitStr[1] + "', '" + splitStr[2] + "', '" + trataTimestamp.get(j) + "', '" + splitStr[3] +"');");
+			 }
+		 } catch (SocketTimeoutException socketTimeoutException) {}
          portUdp = Integer.parseInt(args[0]);
          portTcp = Integer.parseInt(args[1]);
-         socketUdp = new DatagramSocket(portUdp);
+		 socketUdp = new DatagramSocket(portUdp);
          socketTcp = new ServerSocket(portTcp);
          socketMulti = new MulticastSocket(portMulti);
          try {

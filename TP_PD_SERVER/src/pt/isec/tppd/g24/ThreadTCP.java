@@ -29,7 +29,7 @@ public class ThreadTCP extends Thread {
    
    @Override
    public void run() {
-      ServerSocket socket;
+      DatagramSocket socket;
       ObjectInputStream in;
       ObjectOutputStream out, tcpOut;
       Object obj;
@@ -77,7 +77,7 @@ public class ThreadTCP extends Thread {
                      out.flush();
                      continue;
                   }
-                  socket = new ServerSocket(0);
+                  socket = new DatagramSocket();
                   out = new ObjectOutputStream(socketClient.getOutputStream());
                   out.writeUnshared(mensagem.getConteudo() + " " + socket.getLocalPort());
                   out.flush();
