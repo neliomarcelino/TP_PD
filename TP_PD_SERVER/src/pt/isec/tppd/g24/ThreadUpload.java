@@ -74,36 +74,6 @@ public class ThreadUpload extends Thread{
 							break;
 						}catch (SocketTimeoutException e){}
 					}
-
-
-					
-                    /*
-                    * Este programa nao considera o facto do protocolo UDP oferecer um servico do tipo "best effort".
-                    * Sendo assim, e' possivel que ocorra perda de datagramas/blocos por erro e esgotamento de buffers.
-                    *
-                    * Por exemplo, ponha a correr o servidor e os clientes na mesma maquina, transfira ficheiros de
-                    * grande dimensao (e.g., fotagrafias com elevada resolucao) e verifique o resultado.
-                    * Uma solucao seria a propria aplicacao incluir um mecanismo de controlo de erros e de fluxo(e.g.,
-                    * do tipo "stop and wait" com mensagens de confirmacao enviadas pelo cliente a cada bloco recebido,
-                    * numeracao dos blocos e verificacao da sequencia, timeout do lado servidor e verificacao da origem
-                    * das confirmacoes dado que o UDP nao e' orientado a ligacao).
-                    *
-                    * No entanto, este esforco adicional nao se justifica. Neste caso, e' preferivel optar pelo protocolo
-                    * TCP.
-                    *
-                    * O pedaco de codigo seguinte que se encontra em comentario permite, em parte, lidar com a situacao de
-                    * transferencia de ficheiros de grande dimensao acima referida. No entanto, esta abordagem nao
-                    * e' uma solcao aceitavel. E' apenas um remendo que da' mais tempo ao cliente para processar um bloco
-                    * antes que o proximo seja enviado pelo servidor, diminuindo, deste modo, a possibilidade de esgotamento
-                    * de buffers e consequente perda de datagramas.
-                    *
-                    */
-
-                    /*try {
-                    Thread.sleep(5);
-                    } catch (InterruptedException ex) {}
-                  */
-
                 }while(nbytes > 0);     
 
                 System.out.println("Transferencia concluida");
