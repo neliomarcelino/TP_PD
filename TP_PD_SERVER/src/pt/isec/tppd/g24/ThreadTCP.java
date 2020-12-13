@@ -292,11 +292,10 @@ public class ThreadTCP extends Thread {
                         channels_fields.append("nome,descricao,admin:");
                         while (rs.next()) {
                            conf = true;
-                           channels_fields.append(rs.getString("NOME")).append(",");
-                           channels_fields.append(rs.getString("DESCRICAO")).append(",");
-                           channels_fields.append(rs.getString("ADMIN")).append(",");
+                           channels_values.append(rs.getString("NOME")).append(",");
+                           channels_values.append(rs.getString("DESCRICAO")).append(",");
+                           channels_values.append(rs.getString("ADMIN")).append(",");
                         }
-                        channels_fields.setLength(channels_fields.length() - 1);
                      }
                      // Custom search
                      else if (fields.split(",").length >= 1) {
