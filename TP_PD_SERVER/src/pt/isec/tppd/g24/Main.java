@@ -181,8 +181,13 @@ public class Main {
 							socketUdp.receive(packet);
 							bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
 							in = new ObjectInputStream(bIn);
+							int filePort = (int) in.readObject();
+							
+							if(filePort == -1){
+								continue;
+							}
 
-							(new ThreadDownload(syncServer.getAddr(), (int) in.readObject(), splitConteudo[1], canal)).start();
+							(new ThreadDownload(syncServer.getAddr(), filePort, splitConteudo[1], canal)).start();
 						}
 					}
 				 }

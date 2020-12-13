@@ -101,6 +101,18 @@ public class ThreadUDP extends Thread {
                receivedMsg = (String) obj;
                if (receivedMsg.contains("/fich")) {
                   String[] splitStr = receivedMsg.trim().split("\\s+");
+				  f = new File(System.getProperty("user.dir") + File.separator + splitStr[2] + File.separator + splitStr[1]);
+                  if (!f.isFile()) {
+                     System.out.println("Ficheiro nao esta na directoria:" + System.getProperty("user.dir"));
+                     bOut = new ByteArrayOutputStream();
+					 out = new ObjectOutputStream(bOut);
+					 out.writeUnshared(-1);
+					 out.flush();
+					 receivePacket.setData(bOut.toByteArray());
+					 receivePacket.setLength(bOut.size());
+					 socket.send(receivePacket);
+                     continue;
+                  }
                   DatagramSocket socketfich = new DatagramSocket();
 				  (t = new ThreadUpload(socketfich, splitStr[1], splitStr[2])).start();
                   

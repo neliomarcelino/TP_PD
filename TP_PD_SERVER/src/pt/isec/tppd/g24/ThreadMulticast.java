@@ -77,8 +77,14 @@ public class ThreadMulticast extends Thread {
                                 pkt = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
                                 socketFich.receive(pkt);
                                 in = new ObjectInputStream(new ByteArrayInputStream(pkt.getData(), 0, pkt.getLength()));
-
-                                (t = new ThreadDownload(splitStr[2], (int) in.readObject(), splitStr[1], msg.getCanal())).start();
+								int filePort = (int) in.readObject();
+								
+								if(filePort == -1){
+									System.out.printl("Servidor nao tem o ficheiro: " + splitStr[1]);
+									continue;
+								}
+									
+                                (t = new ThreadDownload(splitStr[2], filePort, splitStr[1], msg.getCanal())).start();
                             }
 							msg = new Msg(msg.getUsername(), splitStr[0] + " " + splitStr[1], msg.getCanal());
                         }
