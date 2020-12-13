@@ -120,13 +120,19 @@ public class Main {
 			 
 			 InfoServer syncServer = (InfoServer) obj;
 			 
-			 Timestamp comando = null;
+			 Timestamp comando = null, mensagens = null;
 			 ResultSet rs;
 			 
 			 rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM modificacoes;");
 			 
 			 if(rs.next()){
 				 comando = rs.getTimestamp("timestamp");
+			 }
+			 
+			 rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM mensagens;");
+			 
+			 if(rs.next()){
+				 mensagens = rs.getTimestamp("timestamp");
 			 }
 			 
 			 Sincronizacao sincronizar = new Sincronizacao(comando);
@@ -156,40 +162,32 @@ public class Main {
 			 for(int j = 0; j < listComandos.size(); j++){
 				 stmt.executeUpdate(listComandos.get(j));
 				 stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO, TIMESTAMP) VALUES (\"" + listComandos.get(j) + "\", '" + timestampComandos.get(j) +"');");
-				 
-				 if(listComandos.get(j).startsWith("INSERT INTO MENSAGENS")){
-					String[] splitStr = listComandos.get(j).split("\\s+");
-					
-					rs = stmt.executeQuery("SELECT * from mensagens where timestamp=(select max(timestamp) from mensagens);");
-					verifica = "";
-					if(rs.next()){
-						verifica = rs.getString("conteudo");
-						canal = rs.getString("destinatario"); 
-					}
-					if(!verifica.equals("")){
-						String[] splitConteudo = verifica.split("\\s+");
-						if(splitConteudo[0].equalsIgnoreCase("/fich")){
-							bOut = new ByteArrayOutputStream();
-							out = new ObjectOutputStream(bOut);
-							out.writeUnshared(splitConteudo[0] + " " + splitConteudo[1] + " " + canal);
-							out.flush();
+			 }
+			 
+			 rs = stmt.executeQuery("SELECT * from mensagens where timestamp > '"+mensagens+"';");
+			 if(rs.next()){
+				 verifica = rs.getString("conteudo");
+				 canal = rs.getString("destinatario");
+				 String[] splitConteudo = verifica.split("\\s+");
+				 if(splitConteudo[0].equalsIgnoreCase("/fich")){
+					bOut = new ByteArrayOutputStream();
+					out = new ObjectOutputStream(bOut);
+					out.writeUnshared(splitConteudo[0] + " " + splitConteudo[1] + " " + canal);
+					out.flush();
 						 
-							packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(syncServer.getAddr()), syncServer.getPortUdp());
-							socketUdp.send(packet);
+					packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(syncServer.getAddr()), syncServer.getPortUdp());
+					socketUdp.send(packet);
 						  
-							packet = new DatagramPacket(new byte[BUFSIZE], BUFSIZE);
-							socketUdp.receive(packet);
-							bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-							in = new ObjectInputStream(bIn);
-							int filePort = (int) in.readObject();
+					packet = new DatagramPacket(new byte[BUFSIZE], BUFSIZE);
+					socketUdp.receive(packet);
+					bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+					in = new ObjectInputStream(bIn);
+					int filePort = (int) in.readObject();
 							
-							if(filePort == -1){
-								continue;
-							}
-
-							(new ThreadDownload(syncServer.getAddr(), filePort, splitConteudo[1], canal)).start();
-						}
+					if(filePort == -1){
+						continue;
 					}
+					(new ThreadDownload(syncServer.getAddr(), filePort, splitConteudo[1], canal)).start();
 				 }
 			 }
 		 } catch (SocketTimeoutException socketTimeoutException) {}
