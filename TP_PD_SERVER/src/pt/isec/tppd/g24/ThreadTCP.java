@@ -39,6 +39,7 @@ public class ThreadTCP extends Thread {
       DatagramPacket packet = null;
       DatagramSocket socketUdp = null;
       ThreadDownload t = null;
+	  String comando = "";
       File f;
       int i;
       try {
@@ -107,7 +108,9 @@ public class ThreadTCP extends Thread {
                         }
                      }
                      if (conf) {
-                        stmt.executeUpdate("UPDATE UTILIZADORES SET canal='" + nome + "' WHERE UPPER(username)=UPPER('" + user + "');");
+						comando = "UPDATE UTILIZADORES SET canal='" + nome + "' WHERE UPPER(username)=UPPER('" + user + "');";
+                        stmt.executeUpdate(comando);
+						stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 						socketUdp = new DatagramSocket();
 						bOut = new ByteArrayOutputStream();
 					    udpOut = new ObjectOutputStream(bOut);
@@ -151,6 +154,8 @@ public class ThreadTCP extends Thread {
                         str.append("NAME IN USE").append(":").append(nome);
                      } else {
                         if (stmt.executeUpdate("INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');") >= 1) {
+						   comando = "INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');";
+						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 						   socketUdp = new DatagramSocket();
 						   bOut = new ByteArrayOutputStream();
 						   udpOut = new ObjectOutputStream(bOut);
@@ -199,6 +204,12 @@ public class ThreadTCP extends Thread {
                                                        "password = '" + password + "', " +
                                                        "admin = '" + admin + "' " +
                                                        "WHERE upper(nome) = upper('" + nome + "');") >= 1) {
+						   comando = "UPDATE canais " +
+                                                       "SET descricao = '" + descricao + "', " +
+                                                       "password = '" + password + "', " +
+                                                       "admin = '" + admin + "' " +
+                                                       "WHERE upper(nome) = upper('" + nome + "');";
+						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 						   socketUdp = new DatagramSocket();
 						   bOut = new ByteArrayOutputStream();
 						   udpOut = new ObjectOutputStream(bOut);
@@ -247,6 +258,8 @@ public class ThreadTCP extends Thread {
                      }
                      if (conf_admin && conf_name) {
                         if (stmt.executeUpdate("DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + nome + "');") >= 1) {
+						   comando = "DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + nome + "');";
+						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 						   socketUdp = new DatagramSocket();
 						   bOut = new ByteArrayOutputStream();
 						   udpOut = new ObjectOutputStream(bOut);

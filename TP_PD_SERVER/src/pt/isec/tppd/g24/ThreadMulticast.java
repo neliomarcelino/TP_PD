@@ -38,7 +38,7 @@ public class ThreadMulticast extends Thread {
         InfoServer infoServer;
         ByteArrayOutputStream buff;
         ObjectOutputStream out;
-        String sql = null;
+        String sql = null, comando = "";
         boolean cria;
         int i = 2;
         DatagramSocket socketFich;
@@ -85,14 +85,16 @@ public class ThreadMulticast extends Thread {
                         System.out.println(msg.getUsername() + ":" + msg.getConteudo());
 
                         //Guardar msg na Database
-                        sql = "INSERT INTO MENSAGENS (remetente, conteudo, destinatario)" +
-                                "VALUES ('" + msg.getUsername() + "','" + msg.getConteudo() +"','"+ msg.getCanal()+ "');";
+                        sql = "INSERT INTO MENSAGENS (remetente, conteudo, destinatario) " +
+                                "VALUES ('" + msg.getUsername() + "' ,'" + msg.getConteudo() +"' ,'"+ msg.getCanal()+ "' );";
 
                         if(stmt.executeUpdate(sql)<1){
                             System.out.println("Entry insertion failed");
+							continue;
                         }
                         //Enviar aos clientes a msg
-
+						stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + sql + "\");");
+						
                         synchronized (listaDeClientes) {
                             if (listaDeClientes.size() != 0) {
                                 for (Socket p : listaDeClientes) {
@@ -142,38 +144,48 @@ public class ThreadMulticast extends Thread {
 							String[] splitStr = ((String) obj).trim().split(":");
 							String[] splitServer = splitStr[4].trim().split("\\s+");
 							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
-								stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "');");
+								comando = "INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "');";
+								stmt.executeUpdate(comando);
+								stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 								System.out.println("Registo de utilizador ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "') efetuado com sucesso!");
 							}
 						}else if(((String) obj).contains("NEW CANAL")){
 							String[] splitStr = ((String) obj).trim().split(":");
 							String[] splitServer = splitStr[5].trim().split("\\s+");
 							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
-								stmt.executeUpdate("INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "', '" + splitStr[4] + "');");
+								comando = "INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "', '" + splitStr[4] + "');";
+								stmt.executeUpdate(comando);
+								stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 								System.out.println("Utilizador '" + splitStr[4] + "' criou o canal '" + splitStr[1] + "' com sucesso!");
 							}
 						}else if(((String) obj).contains("EDIT CANAL")){
 							String[] splitStr = ((String) obj).trim().split(":");
 							String[] splitServer = splitStr[5].trim().split("\\s+");
 							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
-								stmt.executeUpdate("UPDATE canais " +
+								comando = "UPDATE canais " +
                                                        "SET descricao = '" + splitStr[1] + "', " +
                                                        "password = '" + splitStr[2] + "', " +
                                                        "admin = '" + splitStr[3] + "' " +
-                                                       "WHERE upper(nome) = upper('" + splitStr[4] + "');");
+                                                       "WHERE upper(nome) = upper('" + splitStr[4] + "');";
+								stmt.executeUpdate(comando);
+								stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 							}
 						}else if(((String) obj).contains("DELETE CANAL")){
 							String[] splitStr = ((String) obj).trim().split(":");
 							String[] splitServer = splitStr[3].trim().split("\\s+");
 							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
-								stmt.executeUpdate("DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + splitStr[1] + "');");
+								comando = "DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + splitStr[1] + "');";
+								stmt.executeUpdate(comando);
+								stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 								System.out.println("User '" + splitStr[2] + "' eliminou canal '" + splitStr[1] + "'");
 							}
 						}else if(((String) obj).contains("CHANGE CHANNEL")){
 							String[] splitStr = ((String) obj).trim().split(":");
 							String[] splitServer = splitStr[3].trim().split("\\s+");
 							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
-								stmt.executeUpdate("UPDATE UTILIZADORES SET canal='" + splitStr[1] + "' WHERE UPPER(username)=UPPER('" + splitStr[2] + "');");
+								comando = "UPDATE UTILIZADORES SET canal='" + splitStr[1] + "' WHERE UPPER(username)=UPPER('" + splitStr[2] + "');";
+								stmt.executeUpdate(comando);
+								stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 							}
 						}
                     }

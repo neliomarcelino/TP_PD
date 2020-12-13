@@ -8,15 +8,11 @@ import java.sql.*;
 public class Sincronizacao implements Serializable{
     public static final long serialVersionUID = 10L;
 
-    private Timestamp users, mensagens, canais;
+    private Timestamp comando;
 
-    public Sincronizacao(Timestamp users, Timestamp mensagens, Timestamp canais) {
-        this.users = users;
-		this.mensagens = mensagens;
-		this.canais = canais;
+    public Sincronizacao(Timestamp comando) {
+        this.comando = comando;
     }
 
-    public Timestamp getUsers(){return users;}
-	public Timestamp getMensagens(){return mensagens;}
-	public Timestamp getCanais(){return canais;}
+    public Timestamp getComando(){return comando;}
 }

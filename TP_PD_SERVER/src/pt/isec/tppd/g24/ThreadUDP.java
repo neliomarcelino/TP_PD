@@ -34,7 +34,7 @@ public class ThreadUDP extends Thread {
       ObjectOutputStream out;
       ObjectInputStream in;
       
-      String receivedMsg, fich;
+      String receivedMsg, fich, comando = "";
       MsgServer msgEnviar = null;
       Object obj;
       InfoServer regisServer;
@@ -54,62 +54,32 @@ public class ThreadUDP extends Thread {
             obj = in.readObject();
 			
 			if (obj instanceof Sincronizacao) {
-			   ArrayList<String> users = new ArrayList<String>(), mensagens = new ArrayList<String>(), canais = new ArrayList<String>();
+			   ArrayList<String> comandos = new ArrayList<String>();
+			   ArrayList<Timestamp> tcomandos = new ArrayList<Timestamp>();
                sync = (Sincronizacao) obj;
 			   ResultSet rs = null;
 				
-			   String nome,password,username,canal,imagem,remetente,conteudo,destinatario,descricao,admin;
-			   ArrayList<Timestamp> tusers = new ArrayList<Timestamp>(), tmensagens = new ArrayList<Timestamp>(), tcanais = new ArrayList<Timestamp>();
+			   String modificacao;
 			   Timestamp timestamp;
-			   if(sync.getUsers()!=null)
-					rs = stmt.executeQuery("SELECT * FROM UTILIZADORES WHERE TIMESTAMP > '" + sync.getUsers() + "';");
+			   
+			   
+			   if(sync.getComando()!=null)
+					rs = stmt.executeQuery("SELECT * FROM MODIFICACOES WHERE TIMESTAMP > '" + sync.getComando() + "';");
 			   else
-					rs = stmt.executeQuery("SELECT * FROM UTILIZADORES;");
+					rs = stmt.executeQuery("SELECT * FROM MODIFICACOES;");
 			   if(rs != null)
 			   while(rs.next()){
-					username = rs.getString("username");
-					nome = rs.getString("nome");
-					password = rs.getString("password");
-					canal = rs.getString("canal");
+					modificacao = rs.getString("comando");
 					timestamp = rs.getTimestamp("timestamp");
 				   
-				    users.add(username+":"+nome+":"+password+":"+canal);
-					tusers.add(timestamp);
-			   }
-			   if(sync.getMensagens()!=null)
-			        rs = stmt.executeQuery("SELECT * FROM MENSAGENS WHERE TIMESTAMP > '" + sync.getMensagens() + "';");
-				else
-					rs = stmt.executeQuery("SELECT * FROM MENSAGENS;");
-			   if(rs != null)
-			   while(rs.next()){
-					remetente = rs.getString("remetente");
-					conteudo = rs.getString("conteudo");
-					destinatario = rs.getString("destinatario");
-					timestamp = rs.getTimestamp("timestamp");
-				   
-				    mensagens.add(remetente+":"+conteudo+":"+destinatario+":");
-					tmensagens.add(timestamp);
-			   }
-			   if(sync.getCanais()!=null)
-			        rs = stmt.executeQuery("SELECT * FROM CANAIS WHERE TIMESTAMP > '" + sync.getCanais() + "';");
-				else
-					rs = stmt.executeQuery("SELECT * FROM CANAIS;");
-			   if(rs != null)
-			   while(rs.next()){
-					nome = rs.getString("nome");
-					descricao = rs.getString("descricao");
-					password = rs.getString("password");
-					timestamp = rs.getTimestamp("timestamp");
-					admin = rs.getString("admin");
-				   
-				    canais.add(nome+":"+descricao+":"+password+":"+admin);
-					tcanais.add(timestamp);
+				    comandos.add(modificacao);
+					tcomandos.add(timestamp);
 			   }
 			   
 			   bOut = new ByteArrayOutputStream();
                out = new ObjectOutputStream(bOut);
 			   
-			   InfoSincronizacao envia = new InfoSincronizacao(users, mensagens, canais, tusers, tmensagens, tcanais);
+			   InfoSincronizacao envia = new InfoSincronizacao(comandos, tcomandos);
 			   
 			   out.writeUnshared(envia);
 			   out.flush();
@@ -167,6 +137,8 @@ public class ThreadUDP extends Thread {
                         System.out.println("Registo efetuado sem sucesso! Username '" + username + "' ja em uso");
                      } else {
 						if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + "NO_CHANNEL" + "');")>= 1){
+						   comando = "INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + "NO_CHANNEL" + "');";
+						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 						   out.writeUnshared("REGISTO:"+username+":"+name+":"+password+":"+esteServer);
 						   out.flush();
 						   DatagramPacket packetMulti = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
