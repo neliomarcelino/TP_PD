@@ -20,6 +20,8 @@ public class ThreadUpload extends Thread{
         String requestedCanonicalFilePath = null;
         FileInputStream requestedFileInputStream = null;
 		String resposta;
+		
+		int tentativas,tentativasMax = 5;
 
         byte []fileChunk = new byte[MAX_SIZE];
         int nbytes;
