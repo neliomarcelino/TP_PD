@@ -160,15 +160,13 @@ public class Main {
 				 if(listComandos.get(j).startsWith("INSERT INTO MENSAGENS")){
 					String[] splitStr = listComandos.get(j).split("\\s+");
 					
-					rs = stmt.executeQuery("SELECT *, MAX(timestamp) as timestamp FROM mensagens;");
-					
+					rs = stmt.executeQuery("SELECT * from mensagens where timestamp=(select max(timestamp) from mensagens);");
 					verifica = "";
 					if(rs.next()){
 						verifica = rs.getString("conteudo");
 						canal = rs.getString("destinatario"); 
 					}
-					
-					if(verifica != ""){
+					if(!verifica.equals("")){
 						String[] splitConteudo = verifica.split("\\s+");
 						if(splitConteudo[0].equalsIgnoreCase("/fich")){
 							bOut = new ByteArrayOutputStream();

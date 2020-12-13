@@ -2,9 +2,7 @@ package pt.isec.tppd.g24;
 
 import java.io.*;
 import java.net.*;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 
 public class ThreadTCP extends Thread {
@@ -154,7 +152,14 @@ public class ThreadTCP extends Thread {
                         str.append("NAME IN USE").append(":").append(nome);
                      } else {
                         if (stmt.executeUpdate("INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');") >= 1) {
-						   comando = "INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');";
+							
+							rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM canais;");
+							Timestamp trata = null;
+							if(rs.next()){
+								trata = rs.getTimestamp("timestamp");
+							}
+							
+						   comando = "INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN, TIMESTAMP) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "', '" + trata + "');";
 						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 						   socketUdp = new DatagramSocket();
 						   bOut = new ByteArrayOutputStream();

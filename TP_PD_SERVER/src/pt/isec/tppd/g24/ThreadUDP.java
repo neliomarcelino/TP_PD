@@ -42,6 +42,7 @@ public class ThreadUDP extends Thread {
       boolean menosCarga;
       ThreadUpload t;
       Sincronizacao sync;
+	  Timestamp trata = null;
       try {
          System.out.println("UDP Thread iniciado...");
          while (running) {
@@ -137,7 +138,13 @@ public class ThreadUDP extends Thread {
                         System.out.println("Registo efetuado sem sucesso! Username '" + username + "' ja em uso");
                      } else {
 						if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + "NO_CHANNEL" + "');")>= 1){
-						   comando = "INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + "NO_CHANNEL" + "');";
+							rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM UTILIZADORES;");
+			 
+							if(rs.next()){
+								trata = rs.getTimestamp("timestamp");
+							}
+							
+						   comando = "INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL, TIMESTAMP) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + "NO_CHANNEL" + "', '" + trata + "');";
 						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 						   out.writeUnshared("REGISTO:"+username+":"+name+":"+password+":"+esteServer);
 						   out.flush();

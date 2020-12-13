@@ -43,6 +43,7 @@ public class ThreadMulticast extends Thread {
         int i = 2;
         DatagramSocket socketFich;
         ThreadDownload t;
+		ResultSet rs = null;
 
         if(s == null || !running){ return; }
 
@@ -85,13 +86,18 @@ public class ThreadMulticast extends Thread {
                         System.out.println(msg.getUsername() + ":" + msg.getConteudo());
 
                         //Guardar msg na Database
-                        sql = "INSERT INTO MENSAGENS (remetente, conteudo, destinatario) " +
-                                "VALUES ('" + msg.getUsername() + "' ,'" + msg.getConteudo() +"' ,'"+ msg.getCanal()+ "' );";
 
-                        if(stmt.executeUpdate(sql)<1){
+                        if(stmt.executeUpdate("INSERT INTO MENSAGENS (remetente, conteudo, destinatario) " + "VALUES ('" + msg.getUsername() + "' ,'" + msg.getConteudo() +"' ,'"+ msg.getCanal()+ "' );")<1){
                             System.out.println("Entry insertion failed");
 							continue;
                         }
+						
+						rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM mensagens;");
+						Timestamp trata = null;
+						if(rs.next()){
+							trata = rs.getTimestamp("timestamp");
+						}
+						sql = "INSERT INTO MENSAGENS (remetente, conteudo, destinatario, timestamp) " + "VALUES ('" + msg.getUsername() + "' ,'" + msg.getConteudo() +"' ,'"+ msg.getCanal()+"' ,'"+ trata+ "' );";
                         //Enviar aos clientes a msg
 						stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + sql + "\");");
 						
@@ -144,8 +150,15 @@ public class ThreadMulticast extends Thread {
 							String[] splitStr = ((String) obj).trim().split(":");
 							String[] splitServer = splitStr[4].trim().split("\\s+");
 							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
-								comando = "INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "');";
-								stmt.executeUpdate(comando);
+								stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "');");
+								
+								rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM UTILIZADORES;");
+								Timestamp trata = null;
+								if(rs.next()){
+									trata = rs.getTimestamp("timestamp");
+								}
+								
+								comando = "INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, TIMESTAMP) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "', '" + trata + "');";
 								stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 								System.out.println("Registo de utilizador ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "') efetuado com sucesso!");
 							}
@@ -153,8 +166,14 @@ public class ThreadMulticast extends Thread {
 							String[] splitStr = ((String) obj).trim().split(":");
 							String[] splitServer = splitStr[5].trim().split("\\s+");
 							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
-								comando = "INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "', '" + splitStr[4] + "');";
-								stmt.executeUpdate(comando);
+								stmt.executeUpdate("INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "', '" + splitStr[4] + "');");
+								
+								rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM canais;");
+								Timestamp trata = null;
+								if(rs.next()){
+									trata = rs.getTimestamp("timestamp");
+								}
+								comando = "INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + splitStr[1] + "', '" + splitStr[2] + "', '" + splitStr[3] + "', '" + splitStr[4] + "', '" + trata + "');";
 								stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 								System.out.println("Utilizador '" + splitStr[4] + "' criou o canal '" + splitStr[1] + "' com sucesso!");
 							}
