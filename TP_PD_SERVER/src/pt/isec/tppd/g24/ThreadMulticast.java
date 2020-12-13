@@ -80,7 +80,7 @@ public class ThreadMulticast extends Thread {
 								int filePort = (int) in.readObject();
 								
 								if(filePort == -1){
-									System.out.printl("Servidor nao tem o ficheiro: " + splitStr[1]);
+									System.out.println("Servidor nao tem o ficheiro: " + splitStr[1]);
 									continue;
 								}
 									

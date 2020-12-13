@@ -165,7 +165,7 @@ public class Main {
 			 }
 			 
 			 rs = stmt.executeQuery("SELECT * from mensagens where timestamp > '"+mensagens+"';");
-			 if(rs.next()){
+			 while(rs.next()){
 				 verifica = rs.getString("conteudo");
 				 canal = rs.getString("destinatario");
 				 String[] splitConteudo = verifica.split("\\s+");
