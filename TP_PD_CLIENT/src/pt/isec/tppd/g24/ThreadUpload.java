@@ -59,7 +59,8 @@ public class ThreadUpload extends Thread{
 
                     socket.send(packet); 
 					
-				    while (true){
+				    tentativas = 0;
+					while (tentativas <= tentativasMax){
 						socket.setSoTimeout(5000);
 						try{
 							receivePacket = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
@@ -68,14 +69,19 @@ public class ThreadUpload extends Thread{
 
 							if(resposta.equalsIgnoreCase("ERRO")){
 								socket.send(packet);
+								tentativas++;
 							}
 							break;
-						}catch (SocketTimeoutException e){}
+						}catch (SocketTimeoutException e){tentativas++;}
 					}
+					if(tentativas > tentativasMax)
+						break;
+				}while(nbytes > 0);     
 
-                }while(nbytes > 0);     
-
-                System.out.println("Transferencia concluida");
+				if(tentativas > tentativasMax)
+					System.out.println("Transferencia sem sucesso!");
+				else
+					System.out.println("Transferencia concluida!");
 			}
         }catch(NumberFormatException e){
             System.out.println("O porto de escuta deve ser um inteiro positivo:\n\t"+e);

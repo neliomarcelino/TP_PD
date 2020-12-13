@@ -169,6 +169,12 @@ public class ThreadMulticast extends Thread {
 								stmt.executeUpdate("DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + splitStr[1] + "');");
 								System.out.println("User '" + splitStr[2] + "' eliminou canal '" + splitStr[1] + "'");
 							}
+						}else if(((String) obj).contains("CHANGE CHANNEL")){
+							String[] splitStr = ((String) obj).trim().split(":");
+							String[] splitServer = splitStr[3].trim().split("\\s+");
+							if(!(esteServer.getAddr().equals(splitServer[0]) && esteServer.getPortUdp() == Integer.parseInt(splitServer[1]) && esteServer.getPortTcp() == Integer.parseInt(splitServer[2]))){
+								stmt.executeUpdate("UPDATE UTILIZADORES SET canal='" + splitStr[1] + "' WHERE UPPER(username)=UPPER('" + splitStr[2] + "');");
+							}
 						}
                     }
                 }catch(ClassNotFoundException e){

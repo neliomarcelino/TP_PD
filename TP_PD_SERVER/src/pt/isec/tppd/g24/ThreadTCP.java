@@ -108,6 +108,15 @@ public class ThreadTCP extends Thread {
                      }
                      if (conf) {
                         stmt.executeUpdate("UPDATE UTILIZADORES SET canal='" + nome + "' WHERE UPPER(username)=UPPER('" + user + "');");
+						socketUdp = new DatagramSocket();
+						bOut = new ByteArrayOutputStream();
+					    udpOut = new ObjectOutputStream(bOut);
+               
+						udpOut.writeUnshared("CHANGE CHANNEL:"+nome+":"+user+":"+esteServer);
+						udpOut.flush();
+               
+						packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+						socketUdp.send(packet);
                         str.append("OK").append(":").append(nome);
                      } else {
                         str.append("INVALID PASSWORD");
