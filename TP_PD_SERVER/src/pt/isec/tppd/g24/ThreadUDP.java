@@ -166,7 +166,7 @@ public class ThreadUDP extends Thread {
                         out.writeUnshared("USERNAME IN USE");
                         System.out.println("Registo efetuado sem sucesso! Username '" + username + "' ja em uso");
                      } else {
-						if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD) VALUES ('" + username + "', '" + name + "', '" + password + "');")>= 1){
+						if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + "NO_CHANNEL" + "');")>= 1){
 						   out.writeUnshared("REGISTO:"+username+":"+name+":"+password+":"+esteServer);
 						   out.flush();
 						   DatagramPacket packetMulti = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
@@ -198,23 +198,35 @@ public class ThreadUDP extends Thread {
                   } else {
                      String nome = splitStr[1];
                      String password = splitStr[2];
-                     ResultSet rs = stmt.executeQuery("SELECT USERNAME, PASSWORD FROM UTILIZADORES;");
-                     boolean conf = false;
+                     String canal = "";
+                     ResultSet rs = stmt.executeQuery("SELECT USERNAME, PASSWORD, CANAL FROM UTILIZADORES;");
+                     boolean conf_user = false;
+                     boolean conf_pass = false;
                      while (rs.next()) {
                         if (rs.getString("USERNAME").equalsIgnoreCase(nome)) {
+                           conf_user = true;
                            if (rs.getString("PASSWORD").equalsIgnoreCase(password)) {
-                              conf = true;
+                              conf_pass = true;
+                              canal = rs.getString("CANAL");
                            }
                            break;
                         }
                      }
                      
-                     if (conf) {
-                        out.writeUnshared("OK");
+                     if (conf_pass && conf_user) {
+                        out.writeUnshared("OK:" + canal);
                         System.out.println("Utilizador '" + nome + "' efetuou login com a password: '" + password + "' com sucesso!");
                      } else {
-                        System.out.println("Utilizador '" + nome + "' efetuou login com a password: '" + password + "' sem sucesso");
-                        out.writeUnshared("NOT OK");
+                        if(!conf_user) {
+                           System.out.println("Utilizador '" + nome + "' efetuou login com a password: '" + password + "' sem sucesso [username desconhecido]");
+                           out.writeUnshared("NOT OK:WRONG USERNAME");
+                        }else if(!conf_pass) {
+                           System.out.println("Utilizador '" + nome + "' efetuou login com a password: '" + password + "' sem sucesso [password errada]");
+                           out.writeUnshared("NOT OK:WRONG PASS");
+                        }else{
+                           System.out.println("Erro no login desconhecido!");
+                           out.writeUnshared("NOT OK");
+                        }
                      }
                   }
                   

@@ -90,11 +90,12 @@ public class ThreadTCP extends Thread {
                   str.append("CHANGE CHANNEL").append(":");
                   
                   out = new ObjectOutputStream(socketClient.getOutputStream());
-                  if (splitStr.length != 3) {
+                  if (splitStr.length != 4) {
                      str.append("NOT OK");
                   } else {
                      String nome = splitStr[1];
                      String password = splitStr[2];
+                     String user = splitStr[3];
                      ResultSet rs = stmt.executeQuery("SELECT nome, password FROM canais;");
                      boolean conf = false;
                      while (rs.next()) {
@@ -106,6 +107,7 @@ public class ThreadTCP extends Thread {
                         }
                      }
                      if (conf) {
+                        stmt.executeUpdate("UPDATE UTILIZADORES SET canal='" + nome + "' WHERE UPPER(username)=UPPER('" + user + "');");
                         str.append("OK").append(":").append(nome);
                      } else {
                         str.append("INVALID PASSWORD");
@@ -266,120 +268,137 @@ public class ThreadTCP extends Thread {
                   String listWhat = splitStr[1];
                   String fields = splitStr[2];
                   boolean conf = false;
+                  ResultSet rs;
                   
                   out = new ObjectOutputStream(socketClient.getOutputStream());
                   
                   if (listWhat.equalsIgnoreCase("channels")) {
-                     HashMap<String, Integer> num_users = null;
-                     HashMap<String, Integer> num_msg = null;
-                     HashMap<String, Integer> num_fich = null;
+                     HashMap<String, Integer> num_users = new HashMap<>();
+                     HashMap<String, Integer> num_msg = new HashMap<>();
+                     HashMap<String, Integer> num_fich = new HashMap<>();
                      boolean requires_nome = false;
                      boolean requires_descricao = false;
                      boolean requires_admin = false;
                      boolean requires_num_utilizadores = false;
                      boolean requires_num_mensagens = false;
                      boolean requires_num_ficheiros = false;
-                     StringBuilder channels = new StringBuilder();
-                     channels.append("LIST").append(":").append("CHANNELS").append(":");
+                     StringBuilder channels_fields = new StringBuilder();
+                     StringBuilder channels_values = new StringBuilder();
+                     channels_fields.append("LIST").append(":").append("CHANNELS").append(":");
                      
                      if (fields.equalsIgnoreCase("DEFAULT")) {
-                        ResultSet rs = stmt.executeQuery("SELECT DISTINCT nome, descricao, admin FROM canais;");
-                        channels.append("nome,descricao,admin:");
+                        rs = stmt.executeQuery("SELECT DISTINCT nome, descricao, admin FROM canais;");
+                        channels_fields.append("nome,descricao,admin:");
                         while (rs.next()) {
                            conf = true;
-                           channels.append(rs.getString("NOME")).append(",");
-                           channels.append(rs.getString("DESCRICAO")).append(",");
-                           channels.append(rs.getString("ADMIN")).append(",");
+                           channels_fields.append(rs.getString("NOME")).append(",");
+                           channels_fields.append(rs.getString("DESCRICAO")).append(",");
+                           channels_fields.append(rs.getString("ADMIN")).append(",");
                         }
-                        channels.setLength(channels.length() - 1);
+                        channels_fields.setLength(channels_fields.length() - 1);
                      }
                      // Custom search
                      else if (fields.split(",").length >= 1) {
                         StringBuilder sql = new StringBuilder();
                         sql.append("SELECT ").append("nome, ");
                         if (fields.contains("nome")) {
-                           channels.append("nome,");
+                           channels_fields.append("nome,");
                            requires_nome = true;
                         }
                         if (fields.contains("descricao")) {
                            sql.append("descricao, ");
-                           channels.append("descricao,");
+                           channels_fields.append("descricao,");
                            requires_descricao = true;
                         }
                         if (fields.contains("admin")) {
                            sql.append("admin, ");
-                           channels.append("admin,");
+                           channels_fields.append("admin,");
                            requires_admin = true;
                         }
+   
+                        rs = stmt.executeQuery("SELECT DISTINCT nome FROM canais");
+                        while (rs.next()) {
+                           String n = rs.getString("nome");
+                           num_fich.put(n, 0);
+                           num_msg.put(n, 0);
+                           num_users.put(n, 0);
+                        }
+                        
                         if (fields.contains("num_utilizadores")) {
-                           num_users = new HashMap<>();
-                           ResultSet rs = stmt.executeQuery("SELECT count(username) n_users, canal FROM utilizadores GROUP BY canal;");
+                           rs = stmt.executeQuery("SELECT count(username) n_users, canal FROM utilizadores, canais WHERE UPPER(canal) = UPPER(canais.nome) GROUP BY canal;");
                            while (rs.next()) {
                               requires_num_utilizadores = true;
-                              num_users.put(rs.getString("canal"), rs.getInt("n_users"));
+                              num_users.replace(rs.getString("canal"), rs.getInt("n_users"));
                            }
                            if (requires_num_utilizadores) {
-                              channels.append("num_utilizadores,");
+                              channels_fields.append("num_utilizadores,");
                            }
                         }
                         if (fields.contains("num_mensagens")) {
-                           num_msg = new HashMap<>();
-                           ResultSet rs = stmt.executeQuery("SELECT count(destinatario) n_mensagens, destinatario FROM mensagens GROUP BY destinatario;");
+                           rs = stmt.executeQuery("SELECT count(destinatario) n_mensagens, destinatario FROM mensagens, canais WHERE UPPER(destinatario) = UPPER(canais.nome) GROUP BY destinatario;");
                            while (rs.next()) {
                               requires_num_mensagens = true;
-                              num_msg.put(rs.getString("destinatario"), rs.getInt("n_mensagens"));
+                              num_msg.replace(rs.getString("destinatario"), rs.getInt("n_mensagens"));
                            }
                            if (requires_num_mensagens) {
-                              channels.append("num_mensagens,");
+                              channels_fields.append("num_mensagens,");
                            }
                         }
                         if (fields.contains("num_ficheiros")) {
-                           num_fich = new HashMap<>();
-                           ResultSet rs = stmt.executeQuery("SELECT DISTINCT count(destinatario) n_ficheiros, destinatario FROM mensagens WHERE UPPER(conteudo) like '/fich %' GROUP BY destinatario;");
+                           rs = stmt.executeQuery("SELECT DISTINCT count(destinatario) n_ficheiros, destinatario FROM mensagens, canais WHERE UPPER(destinatario) = UPPER(canais.nome) AND UPPER(conteudo) like '/fich %' GROUP BY destinatario;");
                            while (rs.next()) {
                               requires_num_ficheiros = true;
-                              num_fich.put(rs.getString("destinatario"), rs.getInt("n_ficheiros"));
+                              num_fich.replace(rs.getString("destinatario"), rs.getInt("n_ficheiros"));
                            }
                            if (requires_num_ficheiros) {
-                              channels.append("num_ficheiros,");
+                              channels_fields.append("num_ficheiros,");
                            }
                         }
-                        channels.setLength(channels.length() - 1);
+                        channels_fields.setLength(channels_fields.length() - 1);
                         sql.setLength(sql.length() - 2);
                         sql.append(" FROM canais;");
-                        channels.append(":");
+                        channels_values = new StringBuilder();
                         String channel_name;
                         
-                        ResultSet rs = stmt.executeQuery(sql.toString());
+                        rs = stmt.executeQuery(sql.toString());
                         while (rs.next()) {
                            conf = true;
                            channel_name = rs.getString("nome");
                            if (requires_nome)
-                              channels.append(channel_name).append(",");
+                              channels_values.append(channel_name).append(",");
                            
                            if (requires_descricao)
-                              channels.append(rs.getString("descricao")).append(",");
+                              channels_values.append(rs.getString("descricao")).append(",");
+                           
                            if (requires_admin)
-                              channels.append(rs.getString("admin")).append(",");
-                           if (requires_num_utilizadores)
-                              channels.append(num_users.get(channel_name)).append(",");
-                           if (requires_num_mensagens)
-                              channels.append(num_msg.get(channel_name)).append(",");
-                           if (requires_num_ficheiros)
-                              channels.append(num_fich.get(channel_name)).append(",");
+                              channels_values.append(rs.getString("admin")).append(",");
+                           
+                           if (requires_num_utilizadores && num_users.containsKey(channel_name))
+                              channels_values.append(num_users.get(channel_name)).append(",");
+                           
+                           if (requires_num_mensagens && num_msg.containsKey(channel_name))
+                              channels_values.append(num_msg.get(channel_name)).append(",");
+                           
+                           if (requires_num_ficheiros && num_fich.containsKey(channel_name))
+                              channels_values.append(num_fich.get(channel_name)).append(",");
                         }
                         
-                        channels.setLength(channels.length() - 1);
-                        
                      } else {
-                        channels = new StringBuilder();
-                        channels.append("LIST:NOT OK");
+                        channels_fields = new StringBuilder();
+                        channels_fields.append("LIST:NOT OK");
                      }
                      if (! conf) {
-                        channels = new StringBuilder();
-                        channels.append("LIST:CHANNELS:NO CHANNELS");
+                        channels_fields = new StringBuilder();
+                        channels_fields.append("LIST:CHANNELS:NO CHANNELS");
                      }
-                     out.writeUnshared(channels.toString());
+                     out.writeUnshared(channels_fields.toString());
+                     out.flush();
+                     channels_values.append("FINISH");
+                     
+                     for(String str : channels_values.toString().trim().split(",")){
+                        out.writeUnshared(str);
+                        out.flush();
+                     }
                      
                   } else if (listWhat.equalsIgnoreCase("users")) {
                      StringBuilder users = new StringBuilder();
@@ -389,7 +408,7 @@ public class ThreadTCP extends Thread {
                      users.append("LIST").append(":").append("USERS").append(":");
                      
                      if (fields.equalsIgnoreCase("DEFAULT")) {
-                        ResultSet rs = stmt.executeQuery("SELECT DISTINCT nome, username FROM utilizadores;");
+                        rs = stmt.executeQuery("SELECT DISTINCT nome, username FROM utilizadores;");
                         users.append("nome,username:");
                         while (rs.next()) {
                            conf = true;
@@ -415,13 +434,13 @@ public class ThreadTCP extends Thread {
                            users.append("canal,");
                            requires_canal = true;
                         }
-                        
+                        sql.setLength(sql.length() - 2);
                         users.setLength(users.length() - 1);
-                        sql.append("FROM utilizadores;");
+                        sql.append(" FROM utilizadores;");
                         users.append(":");
                         String user_name;
                         
-                        ResultSet rs = stmt.executeQuery(sql.toString());
+                        rs = stmt.executeQuery(sql.toString());
                         while (rs.next()) {
                            conf = true;
                            user_name = rs.getString("nome");
@@ -454,7 +473,7 @@ public class ThreadTCP extends Thread {
                      messages.append("LIST").append(":").append("MESSAGES").append(":");
                      messages.append("remetente,conteudo,destinatario:");
                      if (fields.equalsIgnoreCase("DEFAULT")) {
-                        ResultSet rs = stmt.executeQuery("SELECT DISTINCT remetente, conteudo, destinatario FROM mensagens WHERE UPPER(remetente) = UPPER('" + mensagem.getUsername() + "') OR UPPER(destinatario) = UPPER('" + mensagem.getUsername() + "') ORDER BY timestamp DESC LIMIT " + n_mensagens + ";");
+                        rs = stmt.executeQuery("SELECT DISTINCT remetente, conteudo, destinatario FROM mensagens WHERE UPPER(remetente) = UPPER('" + mensagem.getUsername() + "') OR UPPER(destinatario) = UPPER('" + mensagem.getUsername() + "') ORDER BY timestamp DESC LIMIT " + n_mensagens + ";");
                         
                         while (rs.next()) {
                            conf = true;
@@ -477,7 +496,7 @@ public class ThreadTCP extends Thread {
                               requires_n_mensagens = true;
                               n_mensagens = (str.split("="))[1];
                               
-                           } else if (fields.contains("remetente=")) {
+                           } else if (str.contains("remetente=")) {
                               if(!appliedWhere){
                                  sql.append("WHERE ");
                                  appliedWhere = true;
@@ -486,7 +505,7 @@ public class ThreadTCP extends Thread {
                               String remetente = (str.split("="))[1];
                               sql.append("UPPER(remetente)=UPPER('").append(remetente).append("')").append("AND ");
                               
-                           } else if (fields.contains("destinatario")) {
+                           } else if (str.contains("destinatario")) {
                               if(!appliedWhere){
                                  sql.append("WHERE ");
                                  appliedWhere = true;
@@ -504,8 +523,7 @@ public class ThreadTCP extends Thread {
                            sql.append("LIMIT ").append(n_mensagens);
                         }
                         sql.append(";");
-                        System.out.println(sql);
-                        ResultSet rs = stmt.executeQuery(sql.toString());
+                        rs = stmt.executeQuery(sql.toString());
                         while (rs.next()) {
                            conf = true;
                            messages.append(rs.getString("remetente")).append(",");

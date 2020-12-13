@@ -133,7 +133,18 @@ public class ThreadMsg extends Thread {
                         System.out.println("Nao existem canais criados.");
                      } else {
                         String[] fields = splitStr[2].split(",");
-                        String[] field_values = splitStr[3].split(",");
+                        
+                        StringBuilder values = new StringBuilder();
+                        String s = "";
+                        do{
+                           s = (String) in.readUnshared();
+                           if(s.equalsIgnoreCase("FINISH"))
+                              break;
+                           values.append(s).append(",");
+                        }while(!s.equalsIgnoreCase("FINISH"));
+                        
+                        values.setLength(values.length() - 1);
+                        String[] field_values = values.toString().split(",");
                         
                         System.out.println("Lista dos canais:");
                         for (int i = 0; i < field_values.length; ) {

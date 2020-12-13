@@ -110,15 +110,28 @@ public class Main {
                   bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
                   in = new ObjectInputStream(bIn);
                   String res = ((String) in.readObject());
-                  if (res.equalsIgnoreCase("OK")) {
-                     conf = true;
-                  } else if (res.equalsIgnoreCase("NOT OK")) {
-                     conf = false;
-                     System.out.println("Login invalido");
+                  String[] spliStr = res.split(":");
+                  if(spliStr.length > 1) {
+                     if (spliStr[0].equalsIgnoreCase("OK")) {
+                        conf = true;
+                        canal = spliStr[1];
+                     } else if (spliStr[0].equalsIgnoreCase("NOT OK")) {
+                        conf = false;
+                        if(spliStr[1].equalsIgnoreCase("WRONG USERNAME"))
+                           System.out.println("Username invalido");
+                        else if(spliStr[1].equalsIgnoreCase("WRONG PASS"))
+                           System.out.println("Password invalida");
+                        else
+                           System.out.println("Erro desconhecido");
+                     } else {
+                        conf = false;
+                        System.out.println("Erro desconhecido!");
+                     }
                   } else {
                      conf = false;
-                     System.out.println("Erro!");
+                     System.out.println("Erro desconhecido!");
                   }
+                  
                } while (! conf);
                break;
             
@@ -230,7 +243,7 @@ public class Main {
                }
                String nome = splitStr[1];
                String password = splitStr[2];
-               String changeChannel = "CHANGE CHANNEL" + ":" + nome + ":" + password;
+               String changeChannel = "CHANGE CHANNEL" + ":" + nome + ":" + password + ":" + user.getUsername();
                msgEnvio = new Msg(user.getUsername(), changeChannel, canal);
                
             } else if (teclado.contains("/thischannel")) {
@@ -315,21 +328,84 @@ public class Main {
                
                msgEnvio = new Msg(user.getUsername(), deleteChannel, canal);
                
-            } else if (teclado.contains("/list")) {
+            } else if (teclado.contains("/listar")) {
                splitStr = teclado.trim().split("\\s");
+               
                if(splitStr.length == 1) {
-                  System.out.println("Modo de uso: /list [channels|users|messages] [fields](opcional)");
-                  System.out.println("\tFields dos canais: nome, descricao, admin, num_utilizadores, num_mensagens, num_ficheiros");
-                  System.out.println("\tFields dos utilizadores: nome, username, canal");
-                  System.out.println("\tFields das mensagens: n_mensagens=[num mensagens a listar], remetente=[nome do utilizador], destinatario=[nome do utilizador|nome do canal]");
+                  System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
+                  System.out.println("\tCampos dos canais: nome, descricao, admin, num_utilizadores, num_mensagens, num_ficheiros");
+                  System.out.println("\tCampos dos utilizadores: nome, username, canal");
+                  System.out.println("\tCampos das mensagens: n_mensagens=[num mensagens a listar], remetente=[nome do utilizador], destinatario=[nome do utilizador|nome do canal]");
                   continue;
                }
+               
+               if(!splitStr[1].contains("canais") && !splitStr[1].contains("utilizadores") && !splitStr[1].contains("mensagens")){
+                  System.out.println("Nao e possivel listar " + splitStr[1]);
+                  System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
+                  continue;
+               }
+               
+               conf = true;
+               if(splitStr[1].contains("canais")) {
+                  if(splitStr.length > 2){
+                     for(int i = 2; i < splitStr.length; i++){
+                        if(!splitStr[i].contains("nome") && !splitStr[i].contains("descricao") && !splitStr[i].contains("admin") && !splitStr[i].contains("num_utilizadores") && !splitStr[i].contains("num_mensagens") && !splitStr[i].contains("num_ficheiros")){
+                           System.out.println(splitStr[i] + " nao e um field valido");
+                           System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
+                           System.out.println("\tCampos dos canais: nome, descricao, admin, num_utilizadores, num_mensagens, num_ficheiros");
+                           conf = false;
+                           break;
+                        }
+                     }
+                     if(!conf){
+                        continue;
+                     }
+                  }
+                  conf = false;
+               }
+               
+               else if(splitStr[1].contains("utilizadores")) {
+                  if(splitStr.length > 2){
+                     for(int i = 2; i < splitStr.length; i++){
+                        if(!splitStr[i].contains("nome") && !splitStr[i].contains("username") && !splitStr[i].contains("canal")){
+                           System.out.println(splitStr[i] + " nao e um campo valido");
+                           System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
+                           System.out.println("\tCampos dos utilizadores: nome, username, canal");
+                           conf = false;
+                           break;
+                        }
+                     }
+                     if(!conf){
+                        continue;
+                     }
+                  }
+                  conf = false;
+               }
+   
+               else if(splitStr[1].contains("mensagens")) {
+                  if(splitStr.length > 2){
+                     for(int i = 2; i < splitStr.length; i++){
+                        if(!splitStr[i].contains("n_mensagens=") && !splitStr[i].contains("remetente=") && !splitStr[i].contains("destinatario=")){
+                           System.out.println(splitStr[i] + " nao e um campo valido");
+                           System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
+                           System.out.println("\tCampos das mensagens: n_mensagens=[num mensagens a listar], remetente=[nome do utilizador], destinatario=[nome do utilizador|nome do canal]");
+                           conf = false;
+                           break;
+                        }
+                     }
+                     if(!conf){
+                        continue;
+                     }
+                  }
+                  conf = false;
+               }
+               
                StringBuilder strBuild = new StringBuilder();
                strBuild.append("LIST").append(":");
                
                String listWhat = splitStr[1];
                
-               if (listWhat.equalsIgnoreCase("channels")) {
+               if (listWhat.equalsIgnoreCase("canais")) {
                   strBuild.append("CHANNELS").append(":");
                   
                   if (splitStr.length > 2) {
@@ -341,7 +417,7 @@ public class Main {
                      strBuild.append("DEFAULT");
                   }
                   
-               } else if (listWhat.equalsIgnoreCase("users")) {
+               } else if (listWhat.equalsIgnoreCase("utilizadores")) {
                   strBuild.append("USERS").append(":");
                   
                   if (splitStr.length > 2) {
@@ -353,7 +429,7 @@ public class Main {
                      strBuild.append("DEFAULT");
                   }
                   
-               } else if (listWhat.equalsIgnoreCase("messages")) {
+               } else if (listWhat.equalsIgnoreCase("mensagens")) {
                   strBuild.append("MESSAGES").append(":");
                   
                   if (splitStr.length > 2) {
@@ -366,10 +442,10 @@ public class Main {
                   }
                } else {
                   System.out.println("Erro nos argumentos");
-                  System.out.println("Modo de uso: /list [channels|users|messages] [fields](opcional)");
-                  System.out.println("\tFields dos canais: nome, descricao, admin, num_utilizadores, num_mensagens, num_ficheiros");
-                  System.out.println("\tFields dos utilizadores: nome, username, canal");
-                  System.out.println("\tFields das mensagens: n_mensagens=[num mensagens a listar], remetente=[nome do utilizador], destinatario=[nome do utilizador|nome do canal]");
+                  System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
+                  System.out.println("\tCampos dos canais: nome, descricao, admin, num_utilizadores, num_mensagens, num_ficheiros");
+                  System.out.println("\tCampos dos utilizadores: nome, username, canal");
+                  System.out.println("\tCampos das mensagens: n_mensagens=[num mensagens a listar], remetente=[nome do utilizador], destinatario=[nome do utilizador|nome do canal]");
                   continue;
                }
                
@@ -385,8 +461,8 @@ public class Main {
                                           "\n\tTroca de canal" +
                                           "\n\n/pm [username]" +
                                           "\n\tEnvia mensagem privada para [username]" +
-                                          "\n\n/list [channels|users|messages] [fields]" +
-                                          "\n\tLista canais, utilizadores e mensagens" +
+                                          "\n\n/listar [canais|utilizadores|mensagens] [campos]" +
+                                          "\n\tLista canais, utilizadores ou mensagens" +
                                           "\n\n/createchannel" +
                                           "\n\tCria canal de chat" +
                                           "\n\n/editchannel [nome do canal]" +
