@@ -31,7 +31,7 @@ public class ThreadTCP extends Thread {
    public void run() {
       DatagramSocket socket;
       ObjectInputStream in;
-      ObjectOutputStream out, tcpOut;
+      ObjectOutputStream out, udpOut;
       Object obj;
       ByteArrayOutputStream bOut;
       Msg mensagem;
@@ -144,13 +144,14 @@ public class ThreadTCP extends Thread {
                         if (stmt.executeUpdate("INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');") >= 1) {
 						   socketUdp = new DatagramSocket();
 						   bOut = new ByteArrayOutputStream();
-						   out = new ObjectOutputStream(bOut);
+						   udpOut = new ObjectOutputStream(bOut);
                
-						   out.writeUnshared("NEW CANAL:"+nome+":"+descricao+":"+password+":"+admin+":"+esteServer);
-						   out.flush();
+						   udpOut.writeUnshared("NEW CANAL:"+nome+":"+descricao+":"+password+":"+admin+":"+esteServer);
+						   udpOut.flush();
                
 						   packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
 						   socketUdp.send(packet);
+						   
                            str.append("OK").append(":").append(nome);
                            System.out.println("Utilizador '" + admin + "' criou o canal '" + nome + "' com sucesso!");
                         } else {
@@ -191,10 +192,10 @@ public class ThreadTCP extends Thread {
                                                        "WHERE upper(nome) = upper('" + nome + "');") >= 1) {
 						   socketUdp = new DatagramSocket();
 						   bOut = new ByteArrayOutputStream();
-						   out = new ObjectOutputStream(bOut);
+						   udpOut = new ObjectOutputStream(bOut);
                
-						   out.writeUnshared("EDIT CANAL:"+descricao+":"+password+":"+admin+":"+nome+":"+esteServer);
-						   out.flush();
+						   udpOut.writeUnshared("EDIT CANAL:"+descricao+":"+password+":"+admin+":"+nome+":"+esteServer);
+						   udpOut.flush();
                
 						   packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
 						   socketUdp.send(packet);
@@ -239,10 +240,10 @@ public class ThreadTCP extends Thread {
                         if (stmt.executeUpdate("DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + nome + "');") >= 1) {
 						   socketUdp = new DatagramSocket();
 						   bOut = new ByteArrayOutputStream();
-						   out = new ObjectOutputStream(bOut);
+						   udpOut = new ObjectOutputStream(bOut);
                
-						   out.writeUnshared("DELETE CANAL:"+nome+":"+user+":"+esteServer);
-						   out.flush();
+						   udpOut.writeUnshared("DELETE CANAL:"+nome+":"+user+":"+esteServer);
+						   udpOut.flush();
                
 						   packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
 						   socketUdp.send(packet);
@@ -548,10 +549,10 @@ public class ThreadTCP extends Thread {
                
                socketUdp = new DatagramSocket();
                bOut = new ByteArrayOutputStream();
-               out = new ObjectOutputStream(bOut);
+               udpOut = new ObjectOutputStream(bOut);
                
-               out.writeUnshared(mensagem);
-               out.flush();
+               udpOut.writeUnshared(mensagem);
+               udpOut.flush();
                
                packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
                socketUdp.send(packet);
