@@ -1,5 +1,7 @@
 package pt.isec.tppd.g24;
 
+import pt.isec.tppd.g24.ui.terminal.SocketUser;
+
 import java.io.*;
 import java.net.*;
 import java.sql.*;
@@ -7,15 +9,15 @@ import java.util.*;
 
 public class ThreadTCP extends Thread {
    public static final int MAX_SIZE = 5120;
-   private Socket socketClient;
+   private SocketUser socketClient;
    private InetAddress group;
    private int portMulti;
    protected boolean running;
    private InfoServer esteServer;
-   private List<Socket> listaDeClientes;
+   private List<SocketUser> listaDeClientes;
    private Statement stmt;
    
-   ThreadTCP(Socket socketClient, InetAddress group, int portMulti, InfoServer esteServer, List<Socket> listaDeClientes, Statement stmt) {
+   ThreadTCP(SocketUser socketClient, InetAddress group, int portMulti, InfoServer esteServer, List<SocketUser> listaDeClientes, Statement stmt) {
       this.socketClient = socketClient;
       this.portMulti = portMulti;
       this.group = group;
@@ -27,7 +29,8 @@ public class ThreadTCP extends Thread {
    
    @Override
    public void run() {
-      DatagramSocket socket;
+      Socket socket = socketClient.getSocket();
+      DatagramSocket datagramSocket;
       ObjectInputStream in;
       ObjectOutputStream out, udpOut;
       Object obj;
@@ -37,12 +40,12 @@ public class ThreadTCP extends Thread {
       DatagramPacket packet = null;
       DatagramSocket socketUdp = null;
       ThreadDownload t = null;
-	  String comando = "";
+      String comando = "";
       File f;
       int i;
       try {
          while (running) {
-            in = new ObjectInputStream(socketClient.getInputStream());
+            in = new ObjectInputStream(socket.getInputStream());
             obj = in.readObject();
             
             if (obj instanceof Msg) {
@@ -53,42 +56,96 @@ public class ThreadTCP extends Thread {
                   String[] splitStr = mensagem.getConteudo().trim().split("\\s+");
                   String[] splitFilename = splitStr[1].trim().split("\\.");
                   fileName = splitStr[1];
-                  f = new File(System.getProperty("user.dir") + File.separator + mensagem.getCanal() + File.separator + fileName);
+                  f = new File(System.getProperty("user.dir") + File.separator + mensagem.getdestinatario() + File.separator + fileName);
                   i = 1;
                   while (f.isFile()) {
                      fileName = splitFilename[0] + "(" + i + ")";
                      for (int j = 1; j < splitFilename.length; j++) {
                         fileName += splitFilename[j];
                      }
-                     f = new File(System.getProperty("user.dir") + File.separator + mensagem.getCanal() + File.separator + fileName);
+                     f = new File(System.getProperty("user.dir") + File.separator + mensagem.getdestinatario() + File.separator + fileName);
                      i++;
                   }
-                  (t = new ThreadDownload(socketClient.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName, mensagem.getCanal())).start();
-                  mensagem = new Msg(mensagem.getUsername(), splitStr[0] + " " + fileName + " " + esteServer, mensagem.getCanal());
+                  (t = new ThreadDownload(socket.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName, mensagem.getdestinatario())).start();
+                  mensagem = new Msg(mensagem.getUsername(), splitStr[0] + " " + fileName + " " + esteServer, mensagem.getdestinatario());
                   t.join();
                } else if (mensagem.getConteudo().contains("/get_fich")) {
                   String[] splitStr = mensagem.getConteudo().trim().split("\\s+");
-                  f = new File(System.getProperty("user.dir") + File.separator + mensagem.getCanal() + File.separator + splitStr[1]);
+                  f = new File(System.getProperty("user.dir") + File.separator + mensagem.getdestinatario() + File.separator + splitStr[1]);
                   if (! f.isFile()) {
                      System.out.println("Ficheiro nao esta na directoria:" + System.getProperty("user.dir"));
-                     out = new ObjectOutputStream(socketClient.getOutputStream());
+                     out = new ObjectOutputStream(socket.getOutputStream());
                      out.writeUnshared("/get_fich Erro");
                      out.flush();
                      continue;
                   }
-                  socket = new DatagramSocket();
-                  out = new ObjectOutputStream(socketClient.getOutputStream());
-                  out.writeUnshared(mensagem.getConteudo() + " " + socket.getLocalPort());
+                  datagramSocket = new DatagramSocket();
+                  out = new ObjectOutputStream(socket.getOutputStream());
+                  out.writeUnshared(mensagem.getConteudo() + " " + datagramSocket.getLocalPort());
                   out.flush();
-                  (new ThreadUpload(socket, splitStr[1], mensagem.getCanal())).start();
+                  (new ThreadUpload(datagramSocket, splitStr[1], mensagem.getdestinatario())).start();
                   continue;
+                  
+               } else if (mensagem.getConteudo().contains("GET CANAL")) {
+                  String canal = "NOT OK";
+                  out = new ObjectOutputStream(socket.getOutputStream());
+                  socketClient.setUsername(mensagem.getUsername());
+                  
+                  ResultSet rs = stmt.executeQuery("SELECT username, canal FROM utilizadores;");
+                  while (rs.next()) {
+                     if (rs.getString("username").equalsIgnoreCase(mensagem.getUsername())) {
+                        canal = rs.getString("CANAL");
+                        break;
+                     }
+                  }
+                  out.writeUnshared("GET CANAL:" + canal);
+                  out.flush();
+                  continue;
+                  
+               } else if(mensagem.getConteudo().contains("PRIVATE MESSAGE")) {
+                  String[] splitStr = mensagem.getConteudo().trim().split(":");
+                  StringBuilder pm = new StringBuilder();
+                  out = new ObjectOutputStream(socket.getOutputStream());
+                  pm.append("PRIVATE MESSAGE").append(":");
+                  if(splitStr.length < 3){
+                     pm.append("NOT OK");
+                  } else {
+                     String destinatario = splitStr[1];
+                     ResultSet rs = stmt.executeQuery("SELECT username FROM utilizadores;");
+                     boolean conf = false;
+                     while (rs.next()) {
+                        if (rs.getString("username").equalsIgnoreCase(destinatario)) {
+                           conf = true;
+                           break;
+                        }
+                     }
+                     if(!conf) {
+                        pm.append("USER UNKNOWN");
+                     } else {
+                        String conteudo = splitStr[2];
+                        pm.append(mensagem.getUsername()).append(":");
+                        pm.append(splitStr[2]);
+                        for(SocketUser user : listaDeClientes) {
+                           if(user.getUsername().equalsIgnoreCase(destinatario)){
+                              ObjectOutputStream user_out = new ObjectOutputStream(user.getSocket().getOutputStream());
+                              user_out.writeUnshared(pm);
+                              user_out.flush();
+                           }
+                           if(stmt.executeUpdate("INSERT INTO MENSAGENS (remetente, conteudo, destinatario) " + "VALUES ('" + mensagem.getUsername() + "' ,'" + conteudo +"' ,'"+ destinatario + "' );")<1) {
+                              System.out.println("Nao foi possivel inserir mensagen na bd ['" + mensagem.getUsername() + "' para '" + destinatario + "' : '" + conteudo + "']");
+                              out.writeUnshared("NOT OK");
+                           }
+                        }
+                     }
+                     out.writeUnshared(pm.toString());
+                  }
                   
                } else if (mensagem.getConteudo().contains("CHANGE CHANNEL")) {
                   String[] splitStr = mensagem.getConteudo().trim().split(":");
                   StringBuilder str = new StringBuilder();
                   str.append("CHANGE CHANNEL").append(":");
                   
-                  out = new ObjectOutputStream(socketClient.getOutputStream());
+                  out = new ObjectOutputStream(socket.getOutputStream());
                   if (splitStr.length != 4) {
                      str.append("NOT OK");
                   } else {
@@ -106,18 +163,18 @@ public class ThreadTCP extends Thread {
                         }
                      }
                      if (conf) {
-						comando = "UPDATE UTILIZADORES SET canal='" + nome + "' WHERE UPPER(username)=UPPER('" + user + "');";
+                        comando = "UPDATE UTILIZADORES SET canal='" + nome + "' WHERE UPPER(username)=UPPER('" + user + "');";
                         stmt.executeUpdate(comando);
-						stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
-						socketUdp = new DatagramSocket();
-						bOut = new ByteArrayOutputStream();
-					    udpOut = new ObjectOutputStream(bOut);
-               
-						udpOut.writeUnshared("CHANGE CHANNEL:"+nome+":"+user+":"+esteServer);
-						udpOut.flush();
-               
-						packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
-						socketUdp.send(packet);
+                        stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
+                        socketUdp = new DatagramSocket();
+                        bOut = new ByteArrayOutputStream();
+                        udpOut = new ObjectOutputStream(bOut);
+                        
+                        udpOut.writeUnshared("CHANGE CHANNEL:" + nome + ":" + user + ":" + esteServer);
+                        udpOut.flush();
+                        
+                        packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+                        socketUdp.send(packet);
                         str.append("OK").append(":").append(nome);
                      } else {
                         str.append("INVALID PASSWORD");
@@ -131,7 +188,7 @@ public class ThreadTCP extends Thread {
                   StringBuilder str = new StringBuilder();
                   str.append("CREATE CHANNEL").append(":");
                   
-                  out = new ObjectOutputStream(socketClient.getOutputStream());
+                  out = new ObjectOutputStream(socket.getOutputStream());
                   if (splitStr.length != 4) {
                      str.append("NOT OK");
                   } else {
@@ -152,25 +209,25 @@ public class ThreadTCP extends Thread {
                         str.append("NAME IN USE").append(":").append(nome);
                      } else {
                         if (stmt.executeUpdate("INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "');") >= 1) {
-							
-							rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM canais;");
-							Timestamp trata = null;
-							if(rs.next()){
-								trata = rs.getTimestamp("timestamp");
-							}
-							
-						   comando = "INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN, TIMESTAMP) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "', '" + trata + "');";
-						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
-						   socketUdp = new DatagramSocket();
-						   bOut = new ByteArrayOutputStream();
-						   udpOut = new ObjectOutputStream(bOut);
-               
-						   udpOut.writeUnshared("NEW CANAL:"+nome+":"+descricao+":"+password+":"+admin+":"+esteServer);
-						   udpOut.flush();
-               
-						   packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
-						   socketUdp.send(packet);
-						   
+                           
+                           rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM canais;");
+                           Timestamp trata = null;
+                           if (rs.next()) {
+                              trata = rs.getTimestamp("timestamp");
+                           }
+                           
+                           comando = "INSERT INTO canais (NOME, DESCRICAO, PASSWORD, ADMIN, TIMESTAMP) VALUES ('" + nome + "', '" + descricao + "', '" + password + "', '" + admin + "', '" + trata + "');";
+                           stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
+                           socketUdp = new DatagramSocket();
+                           bOut = new ByteArrayOutputStream();
+                           udpOut = new ObjectOutputStream(bOut);
+                           
+                           udpOut.writeUnshared("NEW CANAL:" + nome + ":" + descricao + ":" + password + ":" + admin + ":" + esteServer);
+                           udpOut.flush();
+                           
+                           packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+                           socketUdp.send(packet);
+                           
                            str.append("OK").append(":").append(nome);
                            System.out.println("Utilizador '" + admin + "' criou o canal '" + nome + "' com sucesso!");
                         } else {
@@ -186,7 +243,7 @@ public class ThreadTCP extends Thread {
                   String[] splitStr = mensagem.getConteudo().trim().split(":");
                   StringBuilder str = new StringBuilder();
                   str.append("EDIT CHANNEL").append(":");
-                  out = new ObjectOutputStream(socketClient.getOutputStream());
+                  out = new ObjectOutputStream(socket.getOutputStream());
                   
                   if (splitStr.length == 5) {
                      String nome = splitStr[1];
@@ -209,21 +266,21 @@ public class ThreadTCP extends Thread {
                                                        "password = '" + password + "', " +
                                                        "admin = '" + admin + "' " +
                                                        "WHERE upper(nome) = upper('" + nome + "');") >= 1) {
-						   comando = "UPDATE canais " +
-                                                       "SET descricao = '" + descricao + "', " +
-                                                       "password = '" + password + "', " +
-                                                       "admin = '" + admin + "' " +
-                                                       "WHERE upper(nome) = upper('" + nome + "');";
-						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
-						   socketUdp = new DatagramSocket();
-						   bOut = new ByteArrayOutputStream();
-						   udpOut = new ObjectOutputStream(bOut);
-               
-						   udpOut.writeUnshared("EDIT CANAL:"+descricao+":"+password+":"+admin+":"+nome+":"+esteServer);
-						   udpOut.flush();
-               
-						   packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
-						   socketUdp.send(packet);
+                           comando = "UPDATE canais " +
+                                   "SET descricao = '" + descricao + "', " +
+                                   "password = '" + password + "', " +
+                                   "admin = '" + admin + "' " +
+                                   "WHERE upper(nome) = upper('" + nome + "');";
+                           stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
+                           socketUdp = new DatagramSocket();
+                           bOut = new ByteArrayOutputStream();
+                           udpOut = new ObjectOutputStream(bOut);
+                           
+                           udpOut.writeUnshared("EDIT CANAL:" + descricao + ":" + password + ":" + admin + ":" + nome + ":" + esteServer);
+                           udpOut.flush();
+                           
+                           packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+                           socketUdp.send(packet);
                            str.append("OK").append(":").append(nome);
                         }
                      } else {
@@ -240,7 +297,7 @@ public class ThreadTCP extends Thread {
                   String[] splitStr = mensagem.getConteudo().trim().split(":");
                   StringBuilder str = new StringBuilder();
                   str.append("DELETE CHANNEL").append(":");
-                  out = new ObjectOutputStream(socketClient.getOutputStream());
+                  out = new ObjectOutputStream(socket.getOutputStream());
                   
                   if (splitStr.length != 2) {
                      str.append("NOT OK");
@@ -263,17 +320,17 @@ public class ThreadTCP extends Thread {
                      }
                      if (conf_admin && conf_name) {
                         if (stmt.executeUpdate("DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + nome + "');") >= 1) {
-						   comando = "DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + nome + "');";
-						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
-						   socketUdp = new DatagramSocket();
-						   bOut = new ByteArrayOutputStream();
-						   udpOut = new ObjectOutputStream(bOut);
-               
-						   udpOut.writeUnshared("DELETE CANAL:"+nome+":"+user+":"+esteServer);
-						   udpOut.flush();
-               
-						   packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
-						   socketUdp.send(packet);
+                           comando = "DELETE FROM canais WHERE UPPER(NOME) = UPPER('" + nome + "');";
+                           stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
+                           socketUdp = new DatagramSocket();
+                           bOut = new ByteArrayOutputStream();
+                           udpOut = new ObjectOutputStream(bOut);
+                           
+                           udpOut.writeUnshared("DELETE CANAL:" + nome + ":" + user + ":" + esteServer);
+                           udpOut.flush();
+                           
+                           packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+                           socketUdp.send(packet);
                            str.append("OK").append(":").append(nome);
                            System.out.println("User '" + user + "' eliminou canal '" + nome + "'");
                         } else {
@@ -298,7 +355,7 @@ public class ThreadTCP extends Thread {
                   boolean conf = false;
                   ResultSet rs;
                   
-                  out = new ObjectOutputStream(socketClient.getOutputStream());
+                  out = new ObjectOutputStream(socket.getOutputStream());
                   
                   if (listWhat.equalsIgnoreCase("channels")) {
                      HashMap<String, Integer> num_users = new HashMap<>();
@@ -342,7 +399,7 @@ public class ThreadTCP extends Thread {
                            channels_fields.append("admin,");
                            requires_admin = true;
                         }
-   
+                        
                         rs = stmt.executeQuery("SELECT DISTINCT nome FROM canais");
                         while (rs.next()) {
                            String n = rs.getString("nome");
@@ -422,7 +479,7 @@ public class ThreadTCP extends Thread {
                      out.flush();
                      channels_values.append("FINISH");
                      
-                     for(String str : channels_values.toString().trim().split(",")){
+                     for (String str : channels_values.toString().trim().split(",")) {
                         out.writeUnshared(str);
                         out.flush();
                      }
@@ -518,13 +575,13 @@ public class ThreadTCP extends Thread {
                         sql.append("SELECT DISTINCT remetente, conteudo, destinatario FROM mensagens ");
                         
                         // Aplica os filtros
-                        for(String str : field){
-                           if(str.contains("n_mensagens=")){
+                        for (String str : field) {
+                           if (str.contains("n_mensagens=")) {
                               requires_n_mensagens = true;
                               n_mensagens = (str.split("="))[1];
                               
                            } else if (str.contains("remetente=")) {
-                              if(!appliedWhere){
+                              if (! appliedWhere) {
                                  sql.append("WHERE ");
                                  appliedWhere = true;
                               }
@@ -533,7 +590,7 @@ public class ThreadTCP extends Thread {
                               sql.append("UPPER(remetente)=UPPER('").append(remetente).append("')").append("AND ");
                               
                            } else if (str.contains("destinatario")) {
-                              if(!appliedWhere){
+                              if (! appliedWhere) {
                                  sql.append("WHERE ");
                                  appliedWhere = true;
                               }
@@ -542,11 +599,11 @@ public class ThreadTCP extends Thread {
                               sql.append("UPPER(destinatario)=UPPER('").append(destinatario).append("')").append("AND ");
                            }
                         }
-                        if(requires_destinatario || requires_remetente) {
+                        if (requires_destinatario || requires_remetente) {
                            sql.setLength(sql.length() - ("AND ").length());
                         }
                         sql.append("ORDER BY timestamp DESC ");
-                        if(requires_n_mensagens){
+                        if (requires_n_mensagens) {
                            sql.append("LIMIT ").append(n_mensagens);
                         }
                         sql.append(";");

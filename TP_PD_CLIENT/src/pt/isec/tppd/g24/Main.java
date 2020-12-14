@@ -111,15 +111,15 @@ public class Main {
                   in = new ObjectInputStream(bIn);
                   String res = ((String) in.readObject());
                   String[] spliStr = res.split(":");
-                  if(spliStr.length > 1) {
+                  if (spliStr.length > 1) {
                      if (spliStr[0].equalsIgnoreCase("OK")) {
                         conf = true;
                         canal = spliStr[1];
                      } else if (spliStr[0].equalsIgnoreCase("NOT OK")) {
                         conf = false;
-                        if(spliStr[1].equalsIgnoreCase("WRONG USERNAME"))
+                        if (spliStr[1].equalsIgnoreCase("WRONG USERNAME"))
                            System.out.println("Username invalido");
-                        else if(spliStr[1].equalsIgnoreCase("WRONG PASS"))
+                        else if (spliStr[1].equalsIgnoreCase("WRONG PASS"))
                            System.out.println("Password invalida");
                         else
                            System.out.println("Erro desconhecido");
@@ -140,19 +140,19 @@ public class Main {
                do {
                   System.out.print("Nome: ");
                   user.setName(inTeclado.readLine());
-                  if(user.getName().contains("=") || user.getName().contains(":")) {
+                  if (user.getName().contains("=") || user.getName().contains(":")) {
                      System.out.println("Nome do utilizador tem caracteres invalidos!");
                      continue;
                   }
                   System.out.print("Username: ");
                   user.setUsername(inTeclado.readLine());
-                  if(user.getUsername().contains("=") || user.getUsername().contains(":")) {
+                  if (user.getUsername().contains("=") || user.getUsername().contains(":")) {
                      System.out.println("Username tem caracteres invalidos!");
                      continue;
                   }
                   System.out.print("Password: ");
                   user.setPassword(inTeclado.readLine());
-                  if(user.getPassword().contains("=") || user.getPassword().contains(":")) {
+                  if (user.getPassword().contains("=") || user.getPassword().contains(":")) {
                      System.out.println("Password tem caracteres invalidos!");
                      continue;
                   }
@@ -193,6 +193,11 @@ public class Main {
          }
          
          socketTcp = new Socket(inicial.getAddr(), inicial.getPortTcp());
+         
+         msgEnvio = new Msg(user.getUsername(), "GET CANAL", canal);
+         out = new ObjectOutputStream(socketTcp.getOutputStream());
+         out.writeObject(msgEnvio);
+         out.flush();
          
          t = new ThreadMsg(socketTcp, lista, ServerRequest, socketUdp, canal);
          t.start();
@@ -235,7 +240,21 @@ public class Main {
                   continue;
                }
                msgEnvio = new Msg(user.getUsername(), teclado, canal);
-            } else if (teclado.contains("/channel")) {
+            } else if (teclado.contains("/pm")) {
+               splitStr = teclado.trim().split("\\s");
+               
+               if (splitStr.length >= 3) {
+                  StringBuilder pm = new StringBuilder();
+                  pm.append("PRIVATE MESSAGE").append(":").append(splitStr[1]).append(":");
+                  for (int i = 2; i < splitStr.length; i++) {
+                     pm.append(splitStr[i]).append(" ");
+                  }
+                  
+                  msgEnvio = new Msg(user.getUsername(), pm.toString(), canal);
+               } else {
+                  System.out.println("Erro nos argumentos");
+               }
+            } else if (teclado.contains("/canal")) {
                splitStr = teclado.trim().split("\\s");
                if (splitStr.length != 3) {
                   System.out.println("Erro nos argumentos");
@@ -246,10 +265,13 @@ public class Main {
                String changeChannel = "CHANGE CHANNEL" + ":" + nome + ":" + password + ":" + user.getUsername();
                msgEnvio = new Msg(user.getUsername(), changeChannel, canal);
                
-            } else if (teclado.contains("/thischannel")) {
-               System.out.println("Canal atual: " + canal);
+            } else if (teclado.contains("/estecanal")) {
+               if (canal.equalsIgnoreCase(""))
+                  System.out.println("Nao esta em nenhum canal");
+               else
+                  System.out.println("Canal atual: " + canal);
                continue;
-            } else if (teclado.contains("/createchannel")) {
+            } else if (teclado.contains("/criacanal")) {
                splitStr = teclado.trim().split("\\s");
                
                String nome, descricao, password;
@@ -269,7 +291,7 @@ public class Main {
                
                msgEnvio = new Msg(user.getUsername(), createChannel, canal);
                
-            } else if (teclado.contains("/editchannel")) {
+            } else if (teclado.contains("/editacanal")) {
                splitStr = teclado.trim().split("\\s");
                if (splitStr.length != 2) {
                   System.out.println("Erro nos argumentos");
@@ -315,7 +337,7 @@ public class Main {
                
                msgEnvio = new Msg(user.getUsername(), editChannel, canal);
                
-            } else if (teclado.contains("/delchannel")) {
+            } else if (teclado.contains("/eliminacanal")) {
                splitStr = teclado.trim().split("\\s");
                
                String nome = splitStr[1];
@@ -331,7 +353,7 @@ public class Main {
             } else if (teclado.contains("/listar")) {
                splitStr = teclado.trim().split("\\s");
                
-               if(splitStr.length == 1) {
+               if (splitStr.length == 1) {
                   System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
                   System.out.println("\tCampos dos canais: nome, descricao, admin, num_utilizadores, num_mensagens, num_ficheiros");
                   System.out.println("\tCampos dos utilizadores: nome, username, canal");
@@ -339,17 +361,17 @@ public class Main {
                   continue;
                }
                
-               if(!splitStr[1].contains("canais") && !splitStr[1].contains("utilizadores") && !splitStr[1].contains("mensagens")){
+               if (! splitStr[1].contains("canais") && ! splitStr[1].contains("utilizadores") && ! splitStr[1].contains("mensagens")) {
                   System.out.println("Nao e possivel listar " + splitStr[1]);
                   System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
                   continue;
                }
                
                conf = true;
-               if(splitStr[1].contains("canais")) {
-                  if(splitStr.length > 2){
-                     for(int i = 2; i < splitStr.length; i++){
-                        if(!splitStr[i].contains("nome") && !splitStr[i].contains("descricao") && !splitStr[i].contains("admin") && !splitStr[i].contains("num_utilizadores") && !splitStr[i].contains("num_mensagens") && !splitStr[i].contains("num_ficheiros")){
+               if (splitStr[1].contains("canais")) {
+                  if (splitStr.length > 2) {
+                     for (int i = 2; i < splitStr.length; i++) {
+                        if (! splitStr[i].contains("nome") && ! splitStr[i].contains("descricao") && ! splitStr[i].contains("admin") && ! splitStr[i].contains("num_utilizadores") && ! splitStr[i].contains("num_mensagens") && ! splitStr[i].contains("num_ficheiros")) {
                            System.out.println(splitStr[i] + " nao e um field valido");
                            System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
                            System.out.println("\tCampos dos canais: nome, descricao, admin, num_utilizadores, num_mensagens, num_ficheiros");
@@ -357,17 +379,15 @@ public class Main {
                            break;
                         }
                      }
-                     if(!conf){
+                     if (! conf) {
                         continue;
                      }
                   }
                   conf = false;
-               }
-               
-               else if(splitStr[1].contains("utilizadores")) {
-                  if(splitStr.length > 2){
-                     for(int i = 2; i < splitStr.length; i++){
-                        if(!splitStr[i].contains("nome") && !splitStr[i].contains("username") && !splitStr[i].contains("canal")){
+               } else if (splitStr[1].contains("utilizadores")) {
+                  if (splitStr.length > 2) {
+                     for (int i = 2; i < splitStr.length; i++) {
+                        if (! splitStr[i].contains("nome") && ! splitStr[i].contains("username") && ! splitStr[i].contains("canal")) {
                            System.out.println(splitStr[i] + " nao e um campo valido");
                            System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
                            System.out.println("\tCampos dos utilizadores: nome, username, canal");
@@ -375,17 +395,15 @@ public class Main {
                            break;
                         }
                      }
-                     if(!conf){
+                     if (! conf) {
                         continue;
                      }
                   }
                   conf = false;
-               }
-   
-               else if(splitStr[1].contains("mensagens")) {
-                  if(splitStr.length > 2){
-                     for(int i = 2; i < splitStr.length; i++){
-                        if(!splitStr[i].contains("n_mensagens=") && !splitStr[i].contains("remetente=") && !splitStr[i].contains("destinatario=")){
+               } else if (splitStr[1].contains("mensagens")) {
+                  if (splitStr.length > 2) {
+                     for (int i = 2; i < splitStr.length; i++) {
+                        if (! splitStr[i].contains("n_mensagens=") && ! splitStr[i].contains("remetente=") && ! splitStr[i].contains("destinatario=")) {
                            System.out.println(splitStr[i] + " nao e um campo valido");
                            System.out.println("Modo de uso: /listar [canais|utilizadores|mensagens] [campos](opcional)");
                            System.out.println("\tCampos das mensagens: n_mensagens=[num mensagens a listar], remetente=[nome do utilizador], destinatario=[nome do utilizador|nome do canal]");
@@ -393,7 +411,7 @@ public class Main {
                            break;
                         }
                      }
-                     if(!conf){
+                     if (! conf) {
                         continue;
                      }
                   }
@@ -455,27 +473,25 @@ public class Main {
                System.out.println("\n HELP:" +
                                           "\n\n/fich [caminho do ficheiro]" +
                                           "\n\tEnvia ficheiro" +
-                                          "\n\n/thischannel" +
+                                          "\n\n/estecanal" +
                                           "\n\tMostra o canal atual" +
-                                          "\n\n/channel [channel name] [password]" +
+                                          "\n\n/canal [channel name] [password]" +
                                           "\n\tTroca de canal" +
-                                          "\n\n/pm [username]" +
+                                          "\n\n/pm [username] [mensagem]" +
                                           "\n\tEnvia mensagem privada para [username]" +
                                           "\n\n/listar [canais|utilizadores|mensagens] [campos]" +
                                           "\n\tLista canais, utilizadores ou mensagens" +
-                                          "\n\n/createchannel" +
+                                          "\n\n/criacanal" +
                                           "\n\tCria canal de chat" +
-                                          "\n\n/editchannel [nome do canal]" +
+                                          "\n\n/editacanal [nome do canal]" +
                                           "\n\tEdita canal (necessita de ser administrador)" +
-                                          "\n\n/delchannel [nome do canal]" +
+                                          "\n\n/eliminacanal [nome do canal]" +
                                           "\n\tElimina canal (necessita de ser administrador)" +
-                                          "\n\n/listusers" +
-                                          "\n\tLista todos os utilizadores" +
                                           "\n\n");
                continue;
             } else if (canal.equalsIgnoreCase("")) {
-                  System.out.println("Nao está em nenhum canal!");
-                  continue;
+               System.out.println("Nao está em nenhum canal!");
+               continue;
             } else {
                msgEnvio = new Msg(user.getUsername(), teclado, canal);
             }

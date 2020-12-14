@@ -9,17 +9,17 @@ public class Msg implements Serializable {
     protected String username;
     protected String conteudo;
     protected Calendar tempo;
-    protected String canal;
+    protected String destinatario;
 
-    public Msg(String username, String conteudo, String canal){
+    public Msg(String username, String conteudo, String destinatario){
         this.username = username;
         this.conteudo = conteudo;
         tempo = GregorianCalendar.getInstance();
-        this.canal = canal;
+        this.destinatario = destinatario;
     }
 
     public String getUsername() {return username;}
     public String getConteudo() {return conteudo;}
     public Calendar getTempo() {return tempo;}
-    public String getCanal() {return canal;}
+    public String getdestinatario() {return destinatario;}
 }

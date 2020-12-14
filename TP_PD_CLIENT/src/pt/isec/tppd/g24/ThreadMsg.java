@@ -69,7 +69,32 @@ public class ThreadMsg extends Thread {
                   (t = new ThreadDownload(socketTcp.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName)).start();
                   continue;
                   
-               } else if (resp.contains("CHANGE CHANNEL")) {
+               } else if(resp.contains("GET CANAL")) {
+                  String[] splitStr = resp.trim().split(":");
+                  if(splitStr.length == 2){
+                     if(!splitStr[1].equalsIgnoreCase("NOT OK")){
+                        canal = splitStr[1];
+                     } else {
+                        System.out.println("Nao foi possivel receber o canal");
+                     }
+                  } else {
+                     System.out.println("Nao foi possivel receber o canal");
+                  }
+                  continue;
+               } else if (resp.contains("PRIVATE MESSAGE")) {
+                  String[] splitStr = resp.trim().split(":");
+                  if(splitStr[1].equalsIgnoreCase("NOT OK")) {
+                     System.out.println("Nao foi possivel enviar a mensagem");
+                  } else if(splitStr[1].equalsIgnoreCase("USER UNKNOWN")) {
+                     System.out.println("Utilizador destino nao existe");
+                  } else {
+                     String remetente = splitStr[1];
+                     String conteudo = splitStr[2];
+                     System.out.println("Private message from " + remetente + ": " + conteudo);
+                  }
+                  continue;
+               }
+               else if (resp.contains("CHANGE CHANNEL")) {
                   String[] splitStr = resp.trim().split(":");
                   String status_code = splitStr[1];
                   
@@ -185,8 +210,6 @@ public class ThreadMsg extends Thread {
                         }
                      }
                   }
-                  
-                  
                   continue;
                }
             }

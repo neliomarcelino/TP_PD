@@ -1,5 +1,7 @@
 package pt.isec.tppd.g24;
 
+import pt.isec.tppd.g24.ui.terminal.SocketUser;
+
 import java.io.*;
 import java.net.*;
 import java.sql.Statement;
@@ -15,9 +17,9 @@ public class ThreadMulticast extends Thread {
     private List<InfoServer> listaServers;
     private InfoServer esteServer;
     private Statement stmt;
-    private List<Socket> listaDeClientes;
+    private List<SocketUser> listaDeClientes;
 
-    public ThreadMulticast(MulticastSocket s, List<InfoServer> listaServers, InfoServer esteServer, Statement stmt, List<Socket> listaDeClientes){
+    public ThreadMulticast(MulticastSocket s, List<InfoServer> listaServers, InfoServer esteServer, Statement stmt, List<SocketUser> listaDeClientes){
         this.s = s;
         running = true;
         this.listaServers = listaServers;
@@ -68,7 +70,7 @@ public class ThreadMulticast extends Thread {
                                 socketFich = new DatagramSocket();
                                 buff = new ByteArrayOutputStream();
                                 out = new ObjectOutputStream(buff);
-                                out.writeUnshared("/fich " + splitStr[1] + " " + msg.getCanal());
+                                out.writeUnshared("/fich " + splitStr[1] + " " + msg.getdestinatario());
                                 out.flush();
 
                                 pkt = new DatagramPacket(buff.toByteArray(), buff.size(), InetAddress.getByName(splitStr[2]), Integer.parseInt(splitStr[3]));
@@ -86,14 +88,14 @@ public class ThreadMulticast extends Thread {
 									
                                 (t = new ThreadDownload(splitStr[2], filePort, splitStr[1], msg.getCanal())).start();
                             }
-							msg = new Msg(msg.getUsername(), splitStr[0] + " " + splitStr[1], msg.getCanal());
+							msg = new Msg(msg.getUsername(), splitStr[0] + " " + splitStr[1], msg.getdestinatario());
                         }
 
                         System.out.println(msg.getUsername() + ":" + msg.getConteudo());
 
                         //Guardar msg na Database
 
-                        if(stmt.executeUpdate("INSERT INTO MENSAGENS (remetente, conteudo, destinatario) " + "VALUES ('" + msg.getUsername() + "' ,'" + msg.getConteudo() +"' ,'"+ msg.getCanal()+ "' );")<1){
+                        if(stmt.executeUpdate("INSERT INTO MENSAGENS (remetente, conteudo, destinatario) " + "VALUES ('" + msg.getUsername() + "' ,'" + msg.getConteudo() +"' ,'"+ msg.getdestinatario()+ "' );")<1){
                             System.out.println("Entry insertion failed");
 							continue;
                         }
@@ -103,14 +105,14 @@ public class ThreadMulticast extends Thread {
 						if(rs.next()){
 							trata = rs.getTimestamp("timestamp");
 						}
-						sql = "INSERT INTO MENSAGENS (remetente, conteudo, destinatario, timestamp) " + "VALUES ('" + msg.getUsername() + "' ,'" + msg.getConteudo() +"' ,'"+ msg.getCanal()+"' ,'"+ trata+ "' );";
+						sql = "INSERT INTO MENSAGENS (remetente, conteudo, destinatario, timestamp) " + "VALUES ('" + msg.getUsername() + "' ,'" + msg.getConteudo() +"' ,'"+ msg.getdestinatario()+"' ,'"+ trata+ "' );";
                         //Enviar aos clientes a msg
 						stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + sql + "\");");
 						
                         synchronized (listaDeClientes) {
                             if (listaDeClientes.size() != 0) {
-                                for (Socket p : listaDeClientes) {
-                                    out = new ObjectOutputStream(p.getOutputStream());
+                                for (SocketUser p : listaDeClientes) {
+                                    out = new ObjectOutputStream(p.getSocket().getOutputStream());
                                     out.writeUnshared(msg);
                                     out.flush();
                                 }

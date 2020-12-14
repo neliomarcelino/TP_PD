@@ -1,5 +1,7 @@
 package pt.isec.tppd.g24;
 
+import pt.isec.tppd.g24.ui.terminal.SocketUser;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -39,8 +41,8 @@ public class Main {
       InetAddress group;
       MulticastSocket socketMulti = null;
       ServerSocket socketTcp = null;
-      Socket socketToClient;
-      List<Socket> listaDeClientes = new ArrayList<>();
+      SocketUser socketToClient;
+      List<SocketUser> listaDeClientes = new ArrayList<>();
       String addr, servername = args[2], sql;
       DatagramSocket socketUdp = null;
       Connection conn = null;
@@ -214,7 +216,8 @@ public class Main {
          enviaEsteServer(esteServer, group, portMulti);
          
          while (true) {
-            socketToClient = socketTcp.accept();
+            socketToClient = new SocketUser();
+            socketToClient.setSocket(socketTcp.accept());
             esteServer.addNClientes();
             enviaEsteServer(esteServer, group, portMulti);
             

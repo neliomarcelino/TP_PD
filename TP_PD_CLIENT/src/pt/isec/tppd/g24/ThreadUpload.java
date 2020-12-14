@@ -48,8 +48,8 @@ public class ThreadUpload extends Thread{
 				
 				requestedFileInputStream = new FileInputStream(requestedCanonicalFilePath);
                 System.out.println("Ficheiro " + requestedCanonicalFilePath + " aberto para leitura.");
-				
-				do{
+                
+               do{
                     nbytes = requestedFileInputStream.read(fileChunk);
 
                     if(nbytes == -1){//EOF
