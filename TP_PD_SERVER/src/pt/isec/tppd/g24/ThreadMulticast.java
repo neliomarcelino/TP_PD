@@ -86,12 +86,15 @@ public class ThreadMulticast extends Thread {
 									continue;
 								}
 									
-                                (t = new ThreadDownload(splitStr[2], filePort, splitStr[1], msg.getCanal())).start();
+                                (t = new ThreadDownload(splitStr[2], filePort, splitStr[1], msg.getdestinatario())).start();
                             }
 							msg = new Msg(msg.getUsername(), splitStr[0] + " " + splitStr[1], msg.getdestinatario());
                         }
 
                         System.out.println(msg.getUsername() + ":" + msg.getConteudo());
+						String[] splitStr = msg.getConteudo().trim().split(":");
+						if(splitStr[0].equalsIgnoreCase("PRIVATE MESSAGE"))
+
 
                         //Guardar msg na Database
 
@@ -112,9 +115,21 @@ public class ThreadMulticast extends Thread {
                         synchronized (listaDeClientes) {
                             if (listaDeClientes.size() != 0) {
                                 for (SocketUser p : listaDeClientes) {
-                                    out = new ObjectOutputStream(p.getSocket().getOutputStream());
-                                    out.writeUnshared(msg);
-                                    out.flush();
+									if(splitStr[0].equalsIgnoreCase("PRIVATE MESSAGE") && p.getUsername().equalsIgnoreCase(msg.getdestinatario())){
+										out = new ObjectOutputStream(p.getSocket().getOutputStream());
+										out.writeUnshared(msg);
+										out.flush();
+										continue;
+									}
+									rs = stmt.executeQuery("SELECT canal FROM utilizadores where username = '" + p.getUsername() + "';");
+									String canal = "";
+									if(rs !=null && rs.next())	
+										canal = rs.getString("canal");
+									if(msg.getdestinatario().equalsIgnoreCase(canal)){									
+										out = new ObjectOutputStream(p.getSocket().getOutputStream());
+										out.writeUnshared(msg);
+										out.flush();
+									}
                                 }
                             }
                         }

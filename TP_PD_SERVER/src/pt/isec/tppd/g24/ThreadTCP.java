@@ -105,10 +105,13 @@ public class ThreadTCP extends Thread {
                } else if(mensagem.getConteudo().contains("PRIVATE MESSAGE")) {
                   String[] splitStr = mensagem.getConteudo().trim().split(":");
                   StringBuilder pm = new StringBuilder();
-                  out = new ObjectOutputStream(socket.getOutputStream());
                   pm.append("PRIVATE MESSAGE").append(":");
                   if(splitStr.length < 3){
-                     pm.append("NOT OK");
+					  pm.append("NOT OK");
+					  out = new ObjectOutputStream(socket.getOutputStream());
+					  out.writeUnshared(pm.toString());
+					  out.flush();
+					  continue;
                   } else {
                      String destinatario = splitStr[1];
                      ResultSet rs = stmt.executeQuery("SELECT username FROM utilizadores;");
@@ -121,25 +124,14 @@ public class ThreadTCP extends Thread {
                      }
                      if(!conf) {
                         pm.append("USER UNKNOWN");
+						out = new ObjectOutputStream(socket.getOutputStream());
+						out.writeUnshared(pm.toString());
+						out.flush();
+						continue;
                      } else {
-                        String conteudo = splitStr[2];
-                        pm.append(mensagem.getUsername()).append(":");
-                        pm.append(splitStr[2]);
-                        for(SocketUser user : listaDeClientes) {
-                           if(user.getUsername().equalsIgnoreCase(destinatario)){
-                              ObjectOutputStream user_out = new ObjectOutputStream(user.getSocket().getOutputStream());
-                              user_out.writeUnshared(pm);
-                              user_out.flush();
-                           }
-                           if(stmt.executeUpdate("INSERT INTO MENSAGENS (remetente, conteudo, destinatario) " + "VALUES ('" + mensagem.getUsername() + "' ,'" + conteudo +"' ,'"+ destinatario + "' );")<1) {
-                              System.out.println("Nao foi possivel inserir mensagen na bd ['" + mensagem.getUsername() + "' para '" + destinatario + "' : '" + conteudo + "']");
-                              out.writeUnshared("NOT OK");
-                           }
-                        }
+						mensagem = new Msg(mensagem.getUsername(), "PRIVATE MESSAGE:" + splitStr[2], destinatario);
                      }
-                     out.writeUnshared(pm.toString());
                   }
-                  
                } else if (mensagem.getConteudo().contains("CHANGE CHANNEL")) {
                   String[] splitStr = mensagem.getConteudo().trim().split(":");
                   StringBuilder str = new StringBuilder();
