@@ -4,6 +4,7 @@ public class User {
    String name;
    String username;
    String password;
+   String foto;
    
    public User(String username, String name) {
       this.username = username;
@@ -34,5 +35,13 @@ public class User {
    
    public String getUsername() {
       return this.username;
+   }
+   
+   public String getFoto() {
+      return this.foto;
+   }
+   
+   public void setFoto(String foto) {
+      this.foto = foto;
    }
 }

@@ -99,7 +99,12 @@ public class ThreadUDP extends Thread {
                System.out.println("Recebi o servidor " + regisServer.getAddr() + ":" + regisServer.getPortUdp() + ":" + regisServer.getPortTcp() + " Clientes:" + regisServer.getNClientes());
             } else if (obj instanceof String) {
                receivedMsg = (String) obj;
-               if (receivedMsg.contains("/fich")) {
+			   
+			   if (receivedMsg.contains("/foto")) {
+                  String[] splitStr = receivedMsg.trim().split("\\s+");
+                  (new ThreadDownload(receivePacket.getAddress().getHostAddress(), Integer.parseInt(splitStr[2]), splitStr[1], "Fotos_de_users")).start();
+                  continue;
+               }else if (receivedMsg.contains("/fich")) {
                   String[] splitStr = receivedMsg.trim().split("\\s+");
 				  File f = new File(System.getProperty("user.dir") + File.separator + splitStr[2] + File.separator + splitStr[1]);
                   if (!f.isFile()) {
@@ -131,12 +136,13 @@ public class ThreadUDP extends Thread {
                   bOut = new ByteArrayOutputStream();
                   out = new ObjectOutputStream(bOut);
                   
-                  if (splitStr.length != 4) {
+                  if (splitStr.length != 5) {
                      out.writeUnshared("NOT OK");
                   } else {
                      String username = splitStr[1];
                      String name = splitStr[2];
                      String password = splitStr[3];
+					 String foto = splitStr[4];
                      ResultSet rs = stmt.executeQuery("SELECT USERNAME FROM UTILIZADORES;");
                      boolean usernameInUse = false;
                      
@@ -149,14 +155,14 @@ public class ThreadUDP extends Thread {
                         out.writeUnshared("USERNAME IN USE");
                         System.out.println("Registo efetuado sem sucesso! Username '" + username + "' ja em uso");
                      } else {
-						if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + "NO_CHANNEL" + "');")>= 1){
+						if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, IMAGEM, CANAL) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + foto + "', '" + "NO_CHANNEL" +"');")>= 1){
 							rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM UTILIZADORES;");
 			 
 							if(rs.next()){
 								trata = rs.getTimestamp("timestamp");
 							}
 							
-						   comando = "INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL, TIMESTAMP) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + "NO_CHANNEL" + "', '" + trata + "');";
+						   comando = "INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, CANAL, IMAGEM) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + "NO_CHANNEL" + "', '" + foto +"');";
 						   stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + comando + "\");");
 						   out.writeUnshared("REGISTO:"+username+":"+name+":"+password+":"+esteServer);
 						   out.flush();

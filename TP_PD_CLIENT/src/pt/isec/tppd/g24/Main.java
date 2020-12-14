@@ -156,8 +156,19 @@ public class Main {
                      System.out.println("Password tem caracteres invalidos!");
                      continue;
                   }
+				  System.out.print("Foto: ");
+                  user.setFoto(inTeclado.readLine());
+                  if (user.getFoto().contains("=") || user.getFoto().contains(":")) {
+                     System.out.println("Password tem caracteres invalidos!");
+                     continue;
+                  }
+				  f = new File(System.getProperty("user.dir") + File.separator + user.getFoto());
+				  if (!f.isFile()) {
+					System.out.println("'"+user.getFoto()+"'Ficheiro nao esta na directoria:" + System.getProperty("user.dir"));
+					continue;
+				  }
                   
-                  String registo = "REGISTA" + ":" + user.getUsername() + ":" + user.getName() + ":" + user.getPassword();
+                  String registo = "REGISTA" + ":" + user.getUsername() + ":" + user.getName() + ":" + user.getPassword()+ ":" + user.getFoto();
                   
                   bOut = new ByteArrayOutputStream();
                   out = new ObjectOutputStream(bOut);
@@ -176,6 +187,7 @@ public class Main {
                   in = new ObjectInputStream(bIn);
                   
                   String res = (String) in.readObject();
+				  System.out.println(res);
                   if (res.equalsIgnoreCase("OK"))
                      conf = true;
                   else if (res.equalsIgnoreCase("USERNAME IN USE")) {
@@ -191,9 +203,19 @@ public class Main {
             default:
                break;
          }
+		 
+		 socket = new DatagramSocket();
+		 bOut = new ByteArrayOutputStream();
+         out = new ObjectOutputStream(bOut);
+         String imagem = "/foto " + user.getFoto()+ " "+ socket.getLocalPort();
+         out.writeUnshared(imagem);
+         out.flush();
          
+         packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
+         socketUdp.send(packet);
+		 (tUpload = new ThreadUpload(socket, user.getFoto())).start();
+		 
          socketTcp = new Socket(inicial.getAddr(), inicial.getPortTcp());
-         
          msgEnvio = new Msg(user.getUsername(), "GET CANAL", canal);
          out = new ObjectOutputStream(socketTcp.getOutputStream());
          out.writeObject(msgEnvio);
