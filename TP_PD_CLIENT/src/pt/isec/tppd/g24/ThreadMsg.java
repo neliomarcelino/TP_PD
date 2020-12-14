@@ -30,6 +30,7 @@ public class ThreadMsg extends Thread {
       ThreadDownload t = null;
       String resp;
       File f;
+	  DatagramSocket socketUp;
       int j;
       if (socketTcp == null || ! running) {
          return;
@@ -48,7 +49,7 @@ public class ThreadMsg extends Thread {
                
             } else if (obj instanceof String) {
                resp = (String) obj;
-               if (resp.contains("/get_fich")) {
+               if (resp.startsWith("/get_fich")) {
                   String[] splitStr = resp.trim().split("\\s+");
                   if (splitStr[1].equalsIgnoreCase("Erro")) {
                      System.out.println("Ficheiro nao existe no servidor/canal.");
@@ -87,7 +88,35 @@ public class ThreadMsg extends Thread {
                      System.out.println("Nao foi possivel enviar a mensagem");
                   } else if(splitStr[1].equalsIgnoreCase("USER UNKNOWN")) {
                      System.out.println("Utilizador destino nao existe");
-                  } else {
+                  } else if(splitStr[1].equalsIgnoreCase("/pm_fich")) {
+					  System.out.println(splitStr[2]);
+					  socketUp = new DatagramSocket();
+					  ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+					  ObjectOutputStream out = new ObjectOutputStream(bOut);
+                      String ficheiro = "/pm_fich " + splitStr[2] + " " + splitStr[3] + " " + socketUp.getLocalPort();
+					  out.writeUnshared(ficheiro);
+					  out.flush();
+         
+					  DatagramPacket packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(lista.get(0).getAddr()), lista.get(0).getPortUdp());
+					  socketUdp.send(packet);
+		              (new ThreadUpload(socketUp, splitStr[2])).start();
+                  } else if (splitStr[1].equalsIgnoreCase("/pm_get_fich")) {
+						if(splitStr[2].equals("Erro"))
+							continue;
+						String fileName = splitStr[2];
+						String[] splitFilename = splitStr[2].trim().split("\\.");
+						f = new File(System.getProperty("user.dir") + File.separator + fileName);
+						int o = 1;
+						while (f.isFile()) {
+							fileName = splitFilename[0] + "(" + o + ")";
+							for (int k = 1; k < splitFilename.length; k++) {
+								fileName += "." + splitFilename[k];
+							}	
+							f = new File(System.getProperty("user.dir") + File.separator + fileName);
+							o++;
+						}
+						(t = new ThreadDownload(socketTcp.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[3]), fileName)).start();
+				  }else {
                      String remetente = splitStr[1];
                      String conteudo = splitStr[2];
                      System.out.println("Private message from " + remetente + ": " + conteudo);

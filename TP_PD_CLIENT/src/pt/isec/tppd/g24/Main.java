@@ -23,7 +23,7 @@ public class Main {
       ObjectInputStream in;
       ObjectOutputStream out;
       String ServerRequest = "LIGACAO SERVER";
-      boolean conexao = false;
+      boolean conexao = false, cria = false;
       List<InfoServer> lista; // lista[0] = serverAddr | lista[1] = serverPortUdp | lista[2] = serverPortTcp
       InfoServer inicial;
       MsgServer resposta;
@@ -137,6 +137,7 @@ public class Main {
             
             case 2:
                System.out.println("Cria conta");
+			   cria = true;
                do {
                   System.out.print("Nome: ");
                   user.setName(inTeclado.readLine());
@@ -204,16 +205,19 @@ public class Main {
                break;
          }
 		 
-		 socket = new DatagramSocket();
-		 bOut = new ByteArrayOutputStream();
-         out = new ObjectOutputStream(bOut);
-         String imagem = "/foto " + user.getFoto()+ " "+ socket.getLocalPort();
-         out.writeUnshared(imagem);
-         out.flush();
-         
-         packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
-         socketUdp.send(packet);
-		 (tUpload = new ThreadUpload(socket, user.getFoto())).start();
+		 
+		 if(cria){
+			 socket = new DatagramSocket();
+			 bOut = new ByteArrayOutputStream();
+			 out = new ObjectOutputStream(bOut);
+			 String imagem = "/foto " + user.getFoto()+ " "+ socket.getLocalPort();
+			 out.writeUnshared(imagem);
+			 out.flush();
+			 
+			 packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
+			 socket.send(packet);
+			 (tUpload = new ThreadUpload(socket, user.getFoto())).start();
+		 }
 		 
          socketTcp = new Socket(inicial.getAddr(), inicial.getPortTcp());
          msgEnvio = new Msg(user.getUsername(), "GET CANAL", canal);
@@ -233,7 +237,7 @@ public class Main {
                break;
             }
             
-            if (teclado.contains("/fich")) {
+            if (teclado.startsWith("/fich")) {
                splitStr = teclado.trim().split("\\s+");
                if (splitStr.length != 2) {
                   System.out.println("Erro no numero de argumentos");
@@ -250,8 +254,7 @@ public class Main {
                }
                socket = new DatagramSocket();
                msgEnvio = new Msg(user.getUsername(), teclado + " " + socket.getLocalPort(), canal);
-               
-            } else if (teclado.contains("/get_fich")) {
+            } else if (teclado.startsWith("/get_fich")) {
                splitStr = teclado.trim().split("\\s+");
                if (splitStr.length != 2) {
                   System.out.println("Erro no numero de argumentos");
@@ -266,12 +269,30 @@ public class Main {
                splitStr = teclado.trim().split("\\s");
                
                if (splitStr.length >= 3) {
+				   if(splitStr[2].startsWith("/fich")){
+					   if (splitStr.length != 4) {
+						System.out.println("Erro no numero de argumentos");
+						continue;
+					   }
+					   f = new File(System.getProperty("user.dir") + File.separator + splitStr[3]);
+					   if (!f.isFile()) {
+							System.out.println("Ficheiro nao esta na directoria:" + System.getProperty("user.dir"));
+							continue;
+					   }
+				   }
+				   if(splitStr[2].startsWith("/get_fich")){
+					   if (splitStr.length != 4) {
+						System.out.println("Erro no numero de argumentos");
+						continue;
+					   }
+				   }
+				   if(splitStr[1] == user.getUsername())
+					   continue;
                   StringBuilder pm = new StringBuilder();
                   pm.append("PRIVATE MESSAGE").append(":").append(splitStr[1]).append(":");
                   for (int i = 2; i < splitStr.length; i++) {
                      pm.append(splitStr[i]).append(" ");
                   }
-                  
                   msgEnvio = new Msg(user.getUsername(), pm.toString(), canal);
                } else {
                   System.out.println("Erro nos argumentos");
@@ -532,7 +553,7 @@ public class Main {
             out.writeObject(msgEnvio);
             out.flush();
             
-            if (teclado.contains("/fich")) {
+            if (teclado.startsWith("/fich")) {
                (tUpload = new ThreadUpload(socket, splitStr[1])).start();
             }
          }

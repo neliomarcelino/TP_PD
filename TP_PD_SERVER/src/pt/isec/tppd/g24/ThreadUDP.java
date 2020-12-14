@@ -100,7 +100,11 @@ public class ThreadUDP extends Thread {
             } else if (obj instanceof String) {
                receivedMsg = (String) obj;
 			   
-			   if (receivedMsg.contains("/foto")) {
+			   if (receivedMsg.contains("/pm_fich")) {
+                  String[] splitStr = receivedMsg.trim().split("\\s+");
+                  (new ThreadDownload(receivePacket.getAddress().getHostAddress(), Integer.parseInt(splitStr[3]), splitStr[1], splitStr[2])).start();
+                  continue;
+               }else if (receivedMsg.contains("/foto")) {
                   String[] splitStr = receivedMsg.trim().split("\\s+");
                   (new ThreadDownload(receivePacket.getAddress().getHostAddress(), Integer.parseInt(splitStr[2]), splitStr[1], "Fotos_de_users")).start();
                   continue;

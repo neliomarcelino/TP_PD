@@ -64,7 +64,7 @@ public class ThreadMulticast extends Thread {
 
                         msg = (Msg)obj;
 
-                        if(msg.getConteudo().contains("/fich")) {
+                        if(msg.getConteudo().startsWith("/fich")) {
                             String[] splitStr = msg.getConteudo().trim().split("\\s+");
                             if(!(esteServer.getAddr().equals(splitStr[2]) && esteServer.getPortUdp() == Integer.parseInt(splitStr[3]) && esteServer.getPortTcp() == Integer.parseInt(splitStr[4]))){
                                 socketFich = new DatagramSocket();

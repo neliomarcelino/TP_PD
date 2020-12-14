@@ -52,7 +52,7 @@ public class ThreadTCP extends Thread {
                mensagem = (Msg) obj;
                
                // Tratamento de ficheiros
-               if (mensagem.getConteudo().contains("/fich")) {
+               if (mensagem.getConteudo().startsWith("/fich")) {
                   String[] splitStr = mensagem.getConteudo().trim().split("\\s+");
                   String[] splitFilename = splitStr[1].trim().split("\\.");
                   fileName = splitStr[1];
@@ -69,7 +69,8 @@ public class ThreadTCP extends Thread {
                   (t = new ThreadDownload(socket.getInetAddress().getHostAddress(), Integer.parseInt(splitStr[2]), fileName, mensagem.getdestinatario())).start();
                   mensagem = new Msg(mensagem.getUsername(), splitStr[0] + " " + fileName + " " + esteServer, mensagem.getdestinatario());
                   t.join();
-               } else if (mensagem.getConteudo().contains("/get_fich")) {
+               } else if (mensagem.getConteudo().startsWith("/get_fich")) {
+				   System.out.println(mensagem.getConteudo());
                   String[] splitStr = mensagem.getConteudo().trim().split("\\s+");
                   f = new File(System.getProperty("user.dir") + File.separator + mensagem.getdestinatario() + File.separator + splitStr[1]);
                   if (! f.isFile()) {
@@ -129,6 +130,57 @@ public class ThreadTCP extends Thread {
 						out.flush();
 						continue;
                      } else {
+						String[] splitFich = splitStr[2].trim().split("\\s+");
+						if(splitFich[0].startsWith("/fich")){
+							if(splitFich.length != 2){
+								pm.append("NOT OK");
+								out = new ObjectOutputStream(socket.getOutputStream());
+								out.writeUnshared(pm.toString());
+								out.flush();
+								continue;
+							}
+							pm.append("/pm_fich:" + splitFich[1] + ":" + mensagem.getUsername() + ";" + destinatario);
+							out = new ObjectOutputStream(socket.getOutputStream());
+							out.writeUnshared(pm.toString());
+							out.flush();
+						}else if(splitFich[0].startsWith("/get_fich")){
+							if(splitFich.length != 2){
+								pm.append("NOT OK");
+								out = new ObjectOutputStream(socket.getOutputStream());
+								out.writeUnshared(pm.toString());
+								out.flush();
+								continue;
+							}
+							boolean ok = true;
+							String e = null;
+							
+							f = new File(System.getProperty("user.dir") + File.separator + splitStr[1] + ";" + mensagem.getUsername() + File.separator + splitFich[1]);
+							if (! f.isFile()) {
+								ok = false;
+							}else {e = splitStr[1] + ";" + mensagem.getUsername();}
+							
+							f = new File(System.getProperty("user.dir") + File.separator +  mensagem.getUsername() + ";" + splitStr[1] + File.separator + splitFich[1]);
+							if (!f.isFile()) {
+								ok = false;
+							}else {e = mensagem.getUsername() + ";" + splitStr[1];}
+							
+							if (e == null) {
+								System.out.println("Ficheiro nao esta na directoria:" + System.getProperty("user.dir") + File.separator + splitStr[1] + ";" + mensagem.getUsername() + File.separator + splitFich[1]);
+								out = new ObjectOutputStream(socket.getOutputStream());
+								out.writeUnshared("/get_fich Erro");
+								out.flush();
+								continue;
+							}
+
+							datagramSocket = new DatagramSocket();
+							pm.append("/pm_get_fich:" + splitFich[1] + ":" + datagramSocket.getLocalPort() + ":" + e);
+							(new ThreadUpload(datagramSocket, splitFich[1], e)).start();
+							out = new ObjectOutputStream(socket.getOutputStream());
+							out.writeUnshared(pm.toString());
+							out.flush();
+							
+							continue;
+						}
 						mensagem = new Msg(mensagem.getUsername(), "PRIVATE MESSAGE:" + splitStr[2], destinatario);
                      }
                   }
