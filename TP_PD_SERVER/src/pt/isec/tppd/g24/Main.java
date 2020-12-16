@@ -179,23 +179,22 @@ public class Main {
 					out = new ObjectOutputStream(bOut);
 					out.writeUnshared(splitConteudo[0] + " " + splitConteudo[1] + " " + canal);
 					out.flush();
-							 
+						 
 					packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(syncServer.getAddr()), syncServer.getPortUdp());
 					socketUdp.send(packet);
-							  
+						  
 					packet = new DatagramPacket(new byte[BUFSIZE], BUFSIZE);
 					socketUdp.receive(packet);
 					bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
 					in = new ObjectInputStream(bIn);
 					int filePort = (int) in.readObject();
-								
+							
 					if(filePort == -1){
 						continue;
 					}
 					(new ThreadDownload(syncServer.getAddr(), filePort, splitConteudo[1], canal)).start();
 				 }
 			 }
-			 
 		 } catch (SocketTimeoutException socketTimeoutException) {}
          portUdp = Integer.parseInt(args[0]);
          portTcp = Integer.parseInt(args[1]);
