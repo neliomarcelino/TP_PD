@@ -8,7 +8,6 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -22,7 +21,7 @@ public class ThreadPing extends Thread {
     private DatagramSocket socketUdp;
     private InfoServer esteServer;
 
-    ThreadPing(int segundos, InetAddress group, int portMulti, List<InfoServer> listaServers, DatagramSocket socketUdp, InfoServer esteServer){
+    public ThreadPing(int segundos, InetAddress group, int portMulti, List<InfoServer> listaServers, DatagramSocket socketUdp, InfoServer esteServer){
         this.segundos = segundos;
         running = true;
         this.group = group;

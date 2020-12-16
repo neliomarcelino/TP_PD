@@ -1,6 +1,6 @@
-package pt.isec.tppd.g24.servidor;
-import pt.isec.tppd.g24.*;
+package pt.isec.tppd.g24;
 
+import pt.isec.tppd.g24.servidor.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;

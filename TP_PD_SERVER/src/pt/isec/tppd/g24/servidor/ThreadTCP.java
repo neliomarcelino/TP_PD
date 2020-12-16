@@ -1,10 +1,11 @@
 package pt.isec.tppd.g24.servidor;
 import pt.isec.tppd.g24.*;
-
 import java.io.*;
 import java.net.*;
 import java.sql.*;
 import java.util.*;
+
+import static pt.isec.tppd.g24.Main.enviaEsteServer;
 
 public class ThreadTCP extends Thread {
    public static final int MAX_SIZE = 5120;
@@ -16,7 +17,7 @@ public class ThreadTCP extends Thread {
    private List<SocketUser> listaDeClientes;
    private Statement stmt;
    
-   ThreadTCP(SocketUser socketClient, InetAddress group, int portMulti, InfoServer esteServer, List<SocketUser> listaDeClientes, Statement stmt) {
+   public ThreadTCP(SocketUser socketClient, InetAddress group, int portMulti, InfoServer esteServer, List<SocketUser> listaDeClientes, Statement stmt) {
       this.socketClient = socketClient;
       this.portMulti = portMulti;
       this.group = group;
@@ -690,7 +691,7 @@ public class ThreadTCP extends Thread {
          }
          esteServer.decNClientes();
          try {
-            Main.enviaEsteServer(esteServer, group, portMulti);
+            enviaEsteServer(esteServer, group, portMulti);
          } catch (IOException ioException) {
             ioException.printStackTrace();
          }

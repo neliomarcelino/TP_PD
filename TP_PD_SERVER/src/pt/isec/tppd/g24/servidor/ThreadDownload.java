@@ -1,6 +1,4 @@
 package pt.isec.tppd.g24.servidor;
-import pt.isec.tppd.g24.*;
-
 
 import java.io.*;
 import java.net.*;
@@ -13,7 +11,7 @@ public class ThreadDownload extends Thread{
 
     private String fileName;
 
-    ThreadDownload(String serverAddress, int serverPort, String fileName, String canal){
+    public ThreadDownload(String serverAddress, int serverPort, String fileName, String canal){
         this.serverAddr = serverAddress;
         this.serverPort = serverPort;
         this.fileName = fileName;
