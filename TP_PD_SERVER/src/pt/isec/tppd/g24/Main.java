@@ -166,8 +166,10 @@ public class Main {
 				 stmt.executeUpdate(listComandos.get(j));
 				 stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO, TIMESTAMP) VALUES (\"" + listComandos.get(j) + "\", '" + timestampComandos.get(j) +"');");
 			 }
-			 
-			 rs = stmt.executeQuery("SELECT * from mensagens where timestamp > '"+mensagens+"';");
+			 if(mensagens != null)
+				 rs = stmt.executeQuery("SELECT * from mensagens where timestamp > '"+mensagens+"';");
+			 else 
+				 rs = stmt.executeQuery("SELECT * from mensagens;");
 			 while(rs.next()){
 				 verifica = rs.getString("conteudo");
 				 canal = rs.getString("destinatario");

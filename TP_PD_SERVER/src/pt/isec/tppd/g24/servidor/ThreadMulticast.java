@@ -98,7 +98,6 @@ public class ThreadMulticast extends Thread {
 
                         System.out.println(msg.getUsername() + ":" + msg.getConteudo());
 						String[] splitStr = msg.getConteudo().trim().split(":");
-						if(splitStr[0].equalsIgnoreCase("PRIVATE MESSAGE"))
 
 
                         //Guardar msg na Database
