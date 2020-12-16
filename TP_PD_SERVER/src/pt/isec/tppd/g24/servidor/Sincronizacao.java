@@ -1,7 +1,7 @@
 package pt.isec.tppd.g24.servidor;
 
-import java.io.*;
-import java.sql.*;
+import java.io.Serializable;
+import java.sql.Timestamp;
 
 public class Sincronizacao implements Serializable{
     public static final long serialVersionUID = 10L;

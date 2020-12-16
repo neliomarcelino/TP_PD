@@ -14,7 +14,7 @@ public class ThreadMsg extends Thread {
    public static final int MAX_SIZE = 10000;
    public String canal;
    
-   ThreadMsg(Socket socketTcp, List<InfoServer> lista, String serverRequest, DatagramSocket socketUdp, String canal) {
+   public ThreadMsg(Socket socketTcp, List<InfoServer> lista, String serverRequest, DatagramSocket socketUdp, String canal) {
       this.socketTcp = socketTcp;
       running = true;
       this.lista = lista;

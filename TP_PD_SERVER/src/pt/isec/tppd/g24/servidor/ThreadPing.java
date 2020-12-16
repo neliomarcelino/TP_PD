@@ -1,5 +1,6 @@
 package pt.isec.tppd.g24.servidor;
-import pt.isec.tppd.g24.*;
+
+import pt.isec.tppd.g24.InfoServer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

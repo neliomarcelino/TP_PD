@@ -1,10 +1,12 @@
 package pt.isec.tppd.g24;
 
 import pt.isec.tppd.g24.servidor.*;
+
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
    static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";

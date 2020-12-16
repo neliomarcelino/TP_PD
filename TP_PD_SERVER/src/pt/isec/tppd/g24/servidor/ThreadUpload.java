@@ -1,7 +1,12 @@
 package pt.isec.tppd.g24.servidor;
 
-import java.io.*;
-import java.net.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 
 public class ThreadUpload extends Thread{
     public static final int MAX_SIZE = 5120;

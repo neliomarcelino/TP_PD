@@ -1,11 +1,17 @@
 package pt.isec.tppd.g24.servidor;
-import pt.isec.tppd.g24.*;
+
+import pt.isec.tppd.g24.InfoServer;
+import pt.isec.tppd.g24.Msg;
 
 import java.io.*;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.List;
-import java.sql.*;
 
 public class ThreadMulticast extends Thread {
     public static int MAX_SIZE = 10000;

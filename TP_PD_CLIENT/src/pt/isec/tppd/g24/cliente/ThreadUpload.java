@@ -8,7 +8,7 @@ public class ThreadUpload extends Thread{
     private DatagramSocket socket;
     private String fileName;
 
-    ThreadUpload(DatagramSocket socket, String fileName){
+    public ThreadUpload(DatagramSocket socket, String fileName){
         this.socket = socket;
         this.fileName = fileName;
     }

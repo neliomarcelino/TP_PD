@@ -1,10 +1,20 @@
 package pt.isec.tppd.g24.servidor;
-import pt.isec.tppd.g24.*;
+
+import pt.isec.tppd.g24.InfoServer;
+import pt.isec.tppd.g24.MsgServer;
 
 import java.io.*;
-import java.net.*;
-import java.sql.*;
-import java.util.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ThreadUDP extends Thread {
    protected boolean running;

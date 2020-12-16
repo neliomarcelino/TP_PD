@@ -1,9 +1,16 @@
 package pt.isec.tppd.g24.servidor;
-import pt.isec.tppd.g24.*;
+
+import pt.isec.tppd.g24.InfoServer;
+import pt.isec.tppd.g24.Msg;
+
 import java.io.*;
 import java.net.*;
-import java.sql.*;
-import java.util.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.List;
 
 import static pt.isec.tppd.g24.Main.enviaEsteServer;
 
