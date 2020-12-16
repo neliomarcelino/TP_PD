@@ -1,4 +1,5 @@
-package pt.isec.tppd.g24;
+package pt.isec.tppd.g24.cliente;
+import pt.isec.tppd.g24.*;
 
 import java.io.*;
 import java.net.*;
