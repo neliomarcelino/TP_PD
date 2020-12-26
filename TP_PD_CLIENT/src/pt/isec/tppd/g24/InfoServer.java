@@ -7,12 +7,14 @@ public class InfoServer implements Serializable, Comparable<InfoServer> {
 
     protected String addr;
     protected int portUdp, portTcp, nClientes;
+	protected String serverName;
 
-    public InfoServer(String addr, int portUdp, int portTcp) {
+    public InfoServer(String addr, int portUdp, int portTcp, String serverName) {
         this.addr = addr;
         this.portUdp = portUdp;
         this.portTcp = portTcp;
         this.nClientes = 0;
+		this.serverName = serverName;
     }
 
     public String getAddr() { return addr; }
@@ -22,6 +24,7 @@ public class InfoServer implements Serializable, Comparable<InfoServer> {
     public void addNClientes() { nClientes++; }
     public void decNClientes() { nClientes--; }
     public void setnClientes(int nClientes) {this.nClientes = nClientes;}
+	public String getServerName() { return serverName; }
 
     @Override
     public int compareTo(InfoServer o) {return this.nClientes - o.getNClientes();}

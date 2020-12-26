@@ -7,6 +7,9 @@ import java.net.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.rmi.*;
+import java.rmi.registry.Registry;
+import java.rmi.registry.LocateRegistry;
 
 public class Main {
    static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
@@ -149,13 +152,15 @@ public class Main {
 			 packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(syncServer.getAddr()), syncServer.getPortUdp());
 			 socketUdp.send(packet);
 			 
-			 packet = new DatagramPacket(new byte[BUFSIZE], BUFSIZE);
-			 socketUdp.receive(packet);
-			 
-			 bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-			 in = new ObjectInputStream(bIn);
-				
-			 obj = in.readObject();
+			 do{
+				 packet = new DatagramPacket(new byte[BUFSIZE], BUFSIZE);
+				 socketUdp.receive(packet);
+				 
+				 bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+				 in = new ObjectInputStream(bIn);
+					
+				 obj = in.readObject();
+			 }while(!(obj instanceof InfoSincronizacao));
 			 
 			 InfoSincronizacao resultado = (InfoSincronizacao) obj; 
 			 
@@ -201,19 +206,49 @@ public class Main {
 		 socketUdp = new DatagramSocket(portUdp);
          socketTcp = new ServerSocket(portTcp);
          socketMulti = new MulticastSocket(portMulti);
+		 /*
          try {
             socketMulti.setNetworkInterface(NetworkInterface.getByInetAddress(InetAddress.getByName("lo")));
-         } catch (SocketException | NullPointerException | UnknownHostException | SecurityException ex) {
+         } catch (SocketException | NullPointerException | UnknownHostException |SecurityException ex) {
             socketMulti.setNetworkInterface(NetworkInterface.getByName("lo")); //e.g., eth0, wlan0, en0, lo
          }
+		 */
+		 socketMulti.setNetworkInterface(NetworkInterface.getByName("lo")); //e.g., eth0, wlan0, en0, lo
          socketMulti.joinGroup(group);
          
          addr = InetAddress.getLocalHost().getHostAddress();
          if (addr.equals("0.0.0.0"))
             addr = "127.0.0.1";
-         esteServer = new InfoServer(addr, portUdp, portTcp);
+         esteServer = new InfoServer(addr, portUdp, portTcp, servername);
+		 
+		 //---------------------------------------------------RMI-----------------------------------------------------------------------
+		 //Lança registry
+		 try{
+            System.out.println("Tentativa de lancamento do registry no porto " + Registry.REGISTRY_PORT + "...");
+            LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+            System.out.println("Registry lancado!");
+         }catch(RemoteException e){
+            System.out.println("Registry provavelmente ja' em execucao!");
+         }
+		 
+		 //Cria serviço
+		 //ServidorInterfaceImpl servidorRmi = new ServidorInterfaceImpl(esteServer, stmt, group, portMulti, listaDeClientes);
+		 ServidorInterfaceImpl servidorRmi = new ServidorInterfaceImpl(esteServer, stmt, group, portMulti);
+         System.out.println("Servico ServidorInterfaceImple criado e em execucao (" + servidorRmi.getRef().remoteToString()+"...");
+		 
+		 //Regista serviço
+		 try{
+			Naming.bind("rmi://localhost/" + servername, servidorRmi);
+		 }catch(AlreadyBoundException e){
+			 System.out.println("Ja existe este serviço no resgistry.");
+			 return;
+		 }
+		 System.out.println("Servico " + servername + " registado no registry...");
+		 
+		 //---------------------------------------------------RMI-----------------------------------------------------------------------
+		 
          (tUdp = new ThreadUDP(esteServer, listaServers, socketUdp, stmt, group, portMulti)).start();
-         (tMulti = new ThreadMulticast(socketMulti, listaServers, esteServer, stmt, listaDeClientes)).start();
+         (tMulti = new ThreadMulticast(socketMulti, listaServers, esteServer, stmt, listaDeClientes, servidorRmi)).start();
          (tPing = new ThreadPing(30, group, portMulti, listaServers, socketUdp, esteServer)).start();
          
          enviaEsteServer(esteServer, group, portMulti);
@@ -231,8 +266,6 @@ public class Main {
          }
       } catch (NumberFormatException e) {
          System.out.println("O porto de escuta deve ser um inteiro positivo.");
-      } catch (UnknownHostException e) {
-         e.printStackTrace();
       } catch (SocketException e) {
          e.printStackTrace();
       } catch (IOException e) {

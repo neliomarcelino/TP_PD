@@ -5,6 +5,7 @@ import pt.isec.tppd.g24.cliente.*;
 import java.io.*;
 import java.net.*;
 import java.util.List;
+import java.rmi.*;
 
 public class Main {
    public static final int MAX_SIZE = 5120;
@@ -32,6 +33,7 @@ public class Main {
       Msg msgEnvio;
       String teclado;
       DatagramSocket socket = null;
+	  ServidorInterface servidorRmi;
       
       int op = 0;
       User user = new User();
@@ -45,7 +47,7 @@ public class Main {
       File f;
       
       try {
-         inicial = new InfoServer(args[0], Integer.parseInt(args[1]), - 1);
+         inicial = new InfoServer(args[0], Integer.parseInt(args[1]), - 1, "");
          socketUdp = new DatagramSocket();
          
          do {
@@ -76,6 +78,16 @@ public class Main {
             lista = resposta.getAddrString();
             inicial = lista.get(0);
          } while (! conexao);
+		 
+		 //-----------------------------------------------------------RMI----------------------------------------------------------------
+		 try{
+			servidorRmi = (ServidorInterface) Naming.lookup("rmi://" + inicial.getAddr() + "/" + inicial.getServerName());
+		 } catch (NotBoundException e){
+			 System.out.println("Registry nao esta up");
+			 return;
+		 }
+		 
+		 //-----------------------------------------------------------RMI----------------------------------------------------------------
          
          do {
             System.out.println("1 - Auntenticacao");
@@ -169,7 +181,11 @@ public class Main {
 					System.out.println("'"+user.getFoto()+"'Ficheiro nao esta na directoria:" + System.getProperty("user.dir"));
 					continue;
 				  }
-                  
+				  
+				  //Pede ao registry para registar
+				  String res = servidorRmi.regista(user.getName(), user.getUsername(), user.getPassword(), user.getFoto());
+				  
+				  /*
                   String registo = "REGISTA" + ":" + user.getUsername() + ":" + user.getName() + ":" + user.getPassword()+ ":" + user.getFoto();
                   
                   bOut = new ByteArrayOutputStream();
@@ -190,6 +206,7 @@ public class Main {
                   
                   String res = (String) in.readObject();
 				  System.out.println(res);
+				  */
                   if (res.equalsIgnoreCase("OK"))
                      conf = true;
                   else if (res.equalsIgnoreCase("USERNAME IN USE")) {
@@ -205,7 +222,8 @@ public class Main {
             default:
                break;
          }
-		 
+		 UserInterfaceImpl userRmi = new UserInterfaceImpl();
+		 servidorRmi.addListener(userRmi, user.getUsername());
 		 
 		 if(cria){
 			 socket = new DatagramSocket();
@@ -237,7 +255,19 @@ public class Main {
             if (teclado.equalsIgnoreCase(EXIT)) {
                break;
             }
-            
+			//----------------------------------------------------------------RMI----------------------------------------------------------------
+            if (teclado.startsWith("/enviaServer")) {
+               splitStr = teclado.trim().split("\\s+");
+               if (splitStr.length < 2) {
+                  System.out.println("Erro no numero de argumentos");
+                  continue;
+               }
+			   
+               msgEnvio = new Msg(user.getUsername(), teclado.substring(13), canal);
+			   servidorRmi.envia(msgEnvio);
+			   continue;
+            }else
+			//----------------------------------------------------------------RMI----------------------------------------------------------------
             if (teclado.startsWith("/fich")) {
                splitStr = teclado.trim().split("\\s+");
                if (splitStr.length != 2) {
@@ -560,7 +590,7 @@ public class Main {
          }
       } catch (SocketTimeoutException e) {
          System.out.println("Nao recebi nenhuma resposta (Servidor down?)\n\t" + e);
-      } catch (ClassNotFoundException | UnknownHostException e) {
+      } catch (ClassNotFoundException e) {
          System.out.println("Destino desconhecido:\n\t" + e);
       } catch (NumberFormatException e) {
          System.out.println("O porto do servidor deve ser um inteiro positivo.");

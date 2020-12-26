@@ -145,7 +145,9 @@ public class ThreadUDP extends Thread {
                   socket.send(receivePacket);
                   continue;
                   
-               } else if (receivedMsg.contains("REGISTA")) {
+               } 
+			   /*
+			   else if (receivedMsg.contains("REGISTA")) {
                   String[] splitStr = receivedMsg.trim().split(":");
                   
                   bOut = new ByteArrayOutputStream();
@@ -199,7 +201,9 @@ public class ThreadUDP extends Thread {
                   DatagramSocket socket = new DatagramSocket();
                   socket.send(packet);
                   
-               } else if (receivedMsg.contains("LOGIN")) {
+               }
+			   */
+			   else if (receivedMsg.contains("LOGIN")) {
                   String[] splitStr = receivedMsg.split(":");
                   
                   bOut = new ByteArrayOutputStream();

@@ -1,7 +1,6 @@
 package pt.isec.tppd.g24.servidor;
 
-import pt.isec.tppd.g24.InfoServer;
-import pt.isec.tppd.g24.Msg;
+import pt.isec.tppd.g24.*;
 
 import java.io.*;
 import java.net.DatagramPacket;
@@ -23,14 +22,16 @@ public class ThreadMulticast extends Thread {
     private InfoServer esteServer;
     private Statement stmt;
     private List<SocketUser> listaDeClientes;
+	private ServidorInterfaceImpl servidorRmi;
 
-    public ThreadMulticast(MulticastSocket s, List<InfoServer> listaServers, InfoServer esteServer, Statement stmt, List<SocketUser> listaDeClientes){
+    public ThreadMulticast(MulticastSocket s, List<InfoServer> listaServers, InfoServer esteServer, Statement stmt, List<SocketUser> listaDeClientes, ServidorInterfaceImpl servidorRmi){
         this.s = s;
         running = true;
         this.listaServers = listaServers;
         this.esteServer = esteServer;
         this.stmt = stmt;
         this.listaDeClientes = listaDeClientes;
+		this.servidorRmi = servidorRmi;
     }
 
     public void terminate(){ running = false; }
@@ -116,6 +117,9 @@ public class ThreadMulticast extends Thread {
                         //Enviar aos clientes a msg
 						stmt.executeUpdate("INSERT INTO MODIFICACOES (COMANDO) VALUES (\"" + sql + "\");");
 						
+						servidorRmi.novaNotificacao(msg);
+						
+						/*
                         synchronized (listaDeClientes) {
                             if (listaDeClientes.size() != 0) {
                                 for (SocketUser p : listaDeClientes) {
@@ -137,6 +141,7 @@ public class ThreadMulticast extends Thread {
                                 }
                             }
                         }
+						*/
                     }else if(obj instanceof InfoServer){
                         infoServer = (InfoServer)obj;
                         synchronized (listaServers) {
