@@ -14,9 +14,9 @@ public class UserInterfaceImpl  extends UnicastRemoteObject implements UserInter
 	public UserInterfaceImpl() throws RemoteException{}
 	
 	@Override
-	public void notificacao(Msg mensagem){
+	public void notificacao(String conteudo){
 		System.out.println();
-        System.out.println(mensagem.getUsername() + ": " + mensagem.getConteudo());
+        System.out.println(conteudo);
 		System.out.print(">");
 	}
 }

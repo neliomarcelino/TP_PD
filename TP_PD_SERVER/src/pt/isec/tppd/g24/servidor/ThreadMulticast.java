@@ -167,6 +167,10 @@ public class ThreadMulticast extends Thread {
                             s.send(pkt);
                         }
                     }else if(obj instanceof String){
+						if(((String) obj).startsWith("AUTENTICACAO")){
+							String[] splitStr = ((String) obj).trim().split(":");
+							servidorRmi.novaNotificacao("Utilizador (" + splitStr[1] + ") entrou.");
+                        }else
                         if(((String) obj).equalsIgnoreCase("PING")){
                             buff = new ByteArrayOutputStream();
                             out = new ObjectOutputStream(buff);

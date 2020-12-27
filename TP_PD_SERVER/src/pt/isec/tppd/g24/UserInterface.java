@@ -4,5 +4,5 @@ import java.rmi.*;
 import java.io.*;
 
 public interface UserInterface extends Remote{
-    public void notificacao(Msg mensagem) throws RemoteException;
+	public void notificacao(String conteudo) throws RemoteException;
 }

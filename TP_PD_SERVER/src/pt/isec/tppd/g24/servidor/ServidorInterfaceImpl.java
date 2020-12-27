@@ -27,9 +27,16 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 		this.userList = new ArrayList<UserRmi>();
 	}
 	
-	public synchronized void addListener (UserInterface listener, String username) throws RemoteException{
+	public synchronized void addListener (UserInterface listener, String username) throws RemoteException, IOException{
 		System.out.println ("Adding listener -" + listener);
 		userList.add(new UserRmi(listener, username));
+		ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+		ObjectOutputStream out = new ObjectOutputStream(bOut);
+		out.writeUnshared("AUTENTICACAO:" + username);
+		out.flush();
+		DatagramPacket packetMulti = new DatagramPacket(bOut.toByteArray(), bOut.size(), group, portMulti);
+		DatagramSocket socket = new DatagramSocket();
+		socket.send(packetMulti);
 	}
 	
 	public synchronized void removeListener (UserInterface listener) throws RemoteException{
@@ -100,21 +107,22 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 			}
 		}
 		*/
-		
+		String notificacao = mensagem.getUsername() + ": " + mensagem.getConteudo();
 		for(UserRmi u : userList){
-			u.getInterface().notificacao(mensagem);
+			u.getInterface().notificacao(notificacao);
 		}
 	}
 	
 	@Override
 	public void novaNotificacao(Msg mensagem) throws RemoteException, IOException, SQLException {
-		System.out.println("RMI: " + mensagem.getConteudo());
-		String[] splitStr = mensagem.getConteudo().trim().split(":");
+		//System.out.println("RMI: " + mensagem.getConteudo());
+		String[] splitStr = mensagem.getConteudo().trim().split(":"); 
+		String notificacao = mensagem.getUsername() + ": " + mensagem.getConteudo();
 		ResultSet rs = null;
 		for (UserRmi p : userList) {
 			if(splitStr[0].equalsIgnoreCase("PRIVATE MESSAGE") && p.getUsername().equalsIgnoreCase(mensagem.getdestinatario())){
 				try {
-					p.getInterface().notificacao(mensagem);
+					p.getInterface().notificacao(notificacao);
 				}catch (RemoteException e){ //UNABLE TO CONTACT LISTENER
 					removeListener(p.getInterface());
 				}
@@ -126,10 +134,22 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 				canal = rs.getString("canal");
 			if(mensagem.getdestinatario().equalsIgnoreCase(canal)){									
 				try {
-					p.getInterface().notificacao(mensagem);
+					p.getInterface().notificacao(notificacao);
 				}catch (RemoteException e){ //UNABLE TO CONTACT LISTENER
 					removeListener(p.getInterface());
 				}
+			}
+        }                
+	}
+	
+	@Override
+	public void novaNotificacao(String notificacao) throws RemoteException, IOException, SQLException {
+		//System.out.println("RMI: " + notificacao);
+		for (UserRmi p : userList){		
+			try {
+				p.getInterface().notificacao(notificacao);
+			}catch (RemoteException e){ //UNABLE TO CONTACT LISTENER
+				removeListener(p.getInterface());
 			}
         }                
 	}
