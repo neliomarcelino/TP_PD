@@ -132,7 +132,7 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 	}
 	
 	@Override
-	public void novaNotificacao(String notificacao) throws RemoteException, IOException, SQLException {
+	public void novaNotificacao(String notificacao) throws RemoteException, IOException {
 		//System.out.println("RMI: " + notificacao);
 		for (UserRmi p : userList){		
 			try {
