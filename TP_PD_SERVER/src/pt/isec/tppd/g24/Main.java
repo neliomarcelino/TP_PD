@@ -97,7 +97,8 @@ public class Main {
 		 stmt.executeUpdate("CREATE TABLE IF NOT EXISTS modificacoes (" +
                                     " comando VARCHAR(255) NOT NULL, " +
                                     " timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP );");
-         
+		 String[] splitStr = servername.split("/");
+         servername = splitStr[1];
          System.out.println("Using database '" + servername + "' on '" + dbUrl + "'");
 		 group = InetAddress.getByName("230.30.30.30");
 		 

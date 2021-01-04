@@ -40,10 +40,11 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 	}
 	
 	public synchronized void removeListener (UserInterface listener) throws RemoteException{
-		System.out.println ("Removing listener -" + listener);
+		//System.out.println ("Removing listener -" + listener);
 		for(UserRmi u : userList){
-			if(u.getInterface() == listener){
+			if(u.getInterface().equals(listener)){
 				userList.remove(u);
+				System.out.println ("Removing listener -" + listener);
 				break;
 			}
 		}
@@ -108,9 +109,13 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 		}
 		*/
 		String notificacao = mensagem.getUsername() + ": " + mensagem.getConteudo();
-		for(UserRmi u : userList){
-			u.getInterface().notificacao(notificacao);
-		}
+		for (UserRmi p : userList){		
+			try {
+				p.getInterface().notificacao(notificacao);
+			}catch (RemoteException e){ //UNABLE TO CONTACT LISTENER
+				removeListener(p.getInterface());
+			}
+        } 
 	}
 	
 	@Override
@@ -121,6 +126,14 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 		ResultSet rs = null;
 		for (UserRmi p : userList) {
 			if(splitStr[0].equalsIgnoreCase("PRIVATE MESSAGE") && p.getUsername().equalsIgnoreCase(mensagem.getdestinatario())){
+				try {
+					p.getInterface().notificacao(notificacao);
+				}catch (RemoteException e){ //UNABLE TO CONTACT LISTENER
+					removeListener(p.getInterface());
+				}
+				continue;
+			}
+			if(p.getUsername().equalsIgnoreCase("Autonoma")){
 				try {
 					p.getInterface().notificacao(notificacao);
 				}catch (RemoteException e){ //UNABLE TO CONTACT LISTENER
