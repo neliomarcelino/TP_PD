@@ -95,30 +95,6 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 	}
 	
 	@Override
-	public void envia(Msg mensagem) throws RemoteException, IOException {
-		/*
-		ObjectOutputStream out;
-		if (listaDeClientes.size() != 0) {
-			synchronized(listaDeClientes){
-				for (SocketUser p : listaDeClientes) {
-					out = new ObjectOutputStream(p.getSocket().getOutputStream());
-					out.writeUnshared(mensagem);
-					out.flush();
-                }
-			}
-		}
-		*/
-		String notificacao = mensagem.getUsername() + ": " + mensagem.getConteudo();
-		for (UserRmi p : userList){		
-			try {
-				p.getInterface().notificacao(notificacao);
-			}catch (RemoteException e){ //UNABLE TO CONTACT LISTENER
-				removeListener(p.getInterface());
-			}
-        } 
-	}
-	
-	@Override
 	public void novaNotificacao(Msg mensagem) throws RemoteException, IOException, SQLException {
 		//System.out.println("RMI: " + mensagem.getConteudo());
 		String[] splitStr = mensagem.getConteudo().trim().split(":"); 

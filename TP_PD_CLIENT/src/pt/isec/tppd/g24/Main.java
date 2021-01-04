@@ -263,8 +263,7 @@ public class Main {
                   continue;
                }
 			   
-               msgEnvio = new Msg(user.getUsername(), teclado.substring(13), canal);
-			   servidorRmi.envia(msgEnvio);
+			   servidorRmi.novaNotificacao(user.getUsername() + ": " + teclado.substring(13));
 			   continue;
             }else
 			//----------------------------------------------------------------RMI----------------------------------------------------------------

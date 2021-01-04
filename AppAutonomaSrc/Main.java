@@ -97,9 +97,8 @@ public class Main {
                     continue;
                 }
 
-                Msg msgEnvio = new Msg(username, teclado.substring(13), canal);
                 try {
-                    servidorRmi.envia(msgEnvio);
+                    servidorRmi.novaNotificacao(username + ": " + teclado.substring(13));
                 } catch (IOException e) {
                     System.out.println("Erro no envio da mensagem");
                 }
