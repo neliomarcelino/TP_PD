@@ -4,6 +4,7 @@ import pt.isec.tppd.g24.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.rmi.*;
 
 public class ThreadMsg extends Thread {
    private Socket socketTcp;
@@ -13,14 +14,16 @@ public class ThreadMsg extends Thread {
    private DatagramSocket socketUdp;
    public static final int MAX_SIZE = 10000;
    public String canal;
+   private ServidorInterface servidorRmi;
    
-   public ThreadMsg(Socket socketTcp, List<InfoServer> lista, String serverRequest, DatagramSocket socketUdp, String canal) {
+   public ThreadMsg(Socket socketTcp, List<InfoServer> lista, String serverRequest, DatagramSocket socketUdp, String canal, ServidorInterface servidorRmi) {
       this.socketTcp = socketTcp;
       running = true;
       this.lista = lista;
       this.serverRequest = serverRequest;
       this.socketUdp = socketUdp;
       this.canal = canal;
+	  this.servidorRmi = servidorRmi;
    }
    
    @Override
@@ -246,55 +249,62 @@ public class ThreadMsg extends Thread {
             System.out.print("> ");
          } catch (SocketException e) {
             synchronized (socketTcp) {
-               int i = 0;
-               ByteArrayOutputStream bOut;
-               ObjectOutputStream out;
-               DatagramPacket packet = null;
-               ByteArrayInputStream bIn;
-               ObjectInputStream iin;
-               MsgServer resposta;
-               boolean conexao = false;
-               do {
-                  try {
-                     bOut = new ByteArrayOutputStream();
-                     out = new ObjectOutputStream(bOut);
-                     out.writeUnshared(serverRequest);
-                     out.flush();
-                     
-                     packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(lista.get(i).getAddr()), lista.get(i).getPortUdp());
-                     
-                     socketUdp.send(packet);
-                     socketUdp.setSoTimeout(5000); // 5 sec
-                     packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
-                     socketUdp.receive(packet);
-                     
-                     bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-                     iin = new ObjectInputStream(bIn);
-                     
-                     resposta = (MsgServer) iin.readObject();
-                     
-                     conexao = resposta.getPodeLigar();
-                     lista = resposta.getAddrString();
-                     i = 0;
-                  } catch (SocketTimeoutException socketTimeoutException) {
-                     i++;
-                     if (i == lista.size()) {
-                        System.out.println();
-                        System.out.println("Conexao com os servidores perdida.");
-                        System.out.flush();
-                        System.out.println();
-                        System.exit(- 1);
-                     }
-                  } catch (IOException ioException) {
-                  } catch (ClassNotFoundException classNotFoundException) {
-                  }
-               } while (! conexao);
-               try {
-                  socketTcp = new Socket(lista.get(0).getAddr(), lista.get(0).getPortTcp());
-               } catch (IOException ioException) {
-                  ioException.printStackTrace();
-               }
-            }
+			    synchronized (servidorRmi) {
+				   int i = 0;
+				   ByteArrayOutputStream bOut;
+				   ObjectOutputStream out;
+				   DatagramPacket packet = null;
+				   ByteArrayInputStream bIn;
+				   ObjectInputStream iin;
+				   MsgServer resposta;
+				   boolean conexao = false;
+				   do {
+					  try {
+						 bOut = new ByteArrayOutputStream();
+						 out = new ObjectOutputStream(bOut);
+						 out.writeUnshared(serverRequest);
+						 out.flush();
+						 
+						 packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(lista.get(i).getAddr()), lista.get(i).getPortUdp());
+						 
+						 socketUdp.send(packet);
+						 socketUdp.setSoTimeout(5000); // 5 sec
+						 packet = new DatagramPacket(new byte[MAX_SIZE], MAX_SIZE);
+						 socketUdp.receive(packet);
+						 
+						 bIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+						 iin = new ObjectInputStream(bIn);
+						 
+						 resposta = (MsgServer) iin.readObject();
+						 
+						 conexao = resposta.getPodeLigar();
+						 lista = resposta.getAddrString();
+						 i = 0;
+					  } catch (SocketTimeoutException socketTimeoutException) {
+						 i++;
+						 if (i == lista.size()) {
+							System.out.println();
+							System.out.println("Conexao com os servidores perdida.");
+							System.out.flush();
+							System.out.println();
+							System.exit(- 1);
+						 }
+					  } catch (IOException ioException) {
+					  } catch (ClassNotFoundException classNotFoundException) {
+					  }
+				   } while (! conexao);
+				   try {
+					  socketTcp = new Socket(lista.get(0).getAddr(), lista.get(0).getPortTcp());
+					  try{
+						servidorRmi = (ServidorInterface) Naming.lookup("rmi://" + lista.get(0).getAddr() + "/" + lista.get(0).getServerName());
+					  }catch (NotBoundException p){
+						System.out.println("Registry nao esta up");
+					  }
+				   } catch (IOException ioException) {
+					  ioException.printStackTrace();
+				   } 
+				}
+			}
          } catch (IOException e) {
             System.out.println("ThreadMsg!" + e);
             System.out.println(e);
@@ -312,7 +322,9 @@ public class ThreadMsg extends Thread {
    public Socket getSocketTcp() {
       return socketTcp;
    }
-   
+   public ServidorInterface getServidorRmi() {
+      return servidorRmi;
+   }
    public synchronized String setChannel() {
       return canal;
    }

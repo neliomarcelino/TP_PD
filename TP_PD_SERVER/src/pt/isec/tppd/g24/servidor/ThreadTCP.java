@@ -68,7 +68,7 @@ public class ThreadTCP extends Thread {
                   while (f.isFile()) {
                      fileName = splitFilename[0] + "(" + i + ")";
                      for (int j = 1; j < splitFilename.length; j++) {
-                        fileName += splitFilename[j];
+                        fileName += "." + splitFilename[j];
                      }
                      f = new File(System.getProperty("user.dir") + File.separator + mensagem.getdestinatario() + File.separator + fileName);
                      i++;

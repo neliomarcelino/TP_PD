@@ -135,8 +135,10 @@ public class Main {
                         System.out.println("'"+foto+"'Ficheiro nao esta na directoria:" + System.getProperty("user.dir"));
                         continue;
                     }
-                    String res = servidorRmi.regista(nome, rUsername, password, foto);
-                    if (res.equalsIgnoreCase("USERNAME IN USE")) {
+                    String res = servidorRmi.regista(nome, rUsername, password, foto, userRmi);
+					if (res.equalsIgnoreCase("OK")) {
+                        System.out.println("Utilizador criado.");
+                    }else if (res.equalsIgnoreCase("USERNAME IN USE")) {
                         System.out.println("Erro ao criar a conta. Username ja utilizado.");
                     }else {
                         System.out.println("Erro no registo de um utilizador!");

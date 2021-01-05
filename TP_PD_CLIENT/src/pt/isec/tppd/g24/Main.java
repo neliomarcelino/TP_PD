@@ -34,6 +34,7 @@ public class Main {
       String teclado;
       DatagramSocket socket = null;
 	  ServidorInterface servidorRmi;
+	  UserInterfaceImpl userRmi;
       
       int op = 0;
       User user = new User();
@@ -45,7 +46,12 @@ public class Main {
       ThreadUpload tUpload = null;
       String[] splitStr = null;
       File f;
-      
+	  try{
+		  userRmi = new UserInterfaceImpl();
+	  }catch(RemoteException e){
+		  System.out.println("Erro a criar userInterfaceImpl.");
+		  return;
+	  }
       try {
          inicial = new InfoServer(args[0], Integer.parseInt(args[1]), - 1, "");
          socketUdp = new DatagramSocket();
@@ -80,6 +86,7 @@ public class Main {
          } while (! conexao);
 		 
 		 //-----------------------------------------------------------RMI----------------------------------------------------------------
+		 //System.out.print("rmi://" + inicial.getAddr() + "/" + inicial.getServerName());
 		 try{
 			servidorRmi = (ServidorInterface) Naming.lookup("rmi://" + inicial.getAddr() + "/" + inicial.getServerName());
 		 } catch (NotBoundException e){
@@ -183,7 +190,7 @@ public class Main {
 				  }
 				  
 				  //Pede ao registry para registar
-				  String res = servidorRmi.regista(user.getName(), user.getUsername(), user.getPassword(), user.getFoto());
+				  String res = servidorRmi.regista(user.getName(), user.getUsername(), user.getPassword(), user.getFoto(), userRmi);
 				  
 				  /*
                   String registo = "REGISTA" + ":" + user.getUsername() + ":" + user.getName() + ":" + user.getPassword()+ ":" + user.getFoto();
@@ -222,21 +229,20 @@ public class Main {
             default:
                break;
          }
-		 UserInterfaceImpl userRmi = new UserInterfaceImpl();
 		 servidorRmi.addListener(userRmi, user.getUsername());
 		 
-		 if(cria){
-			 socket = new DatagramSocket();
-			 bOut = new ByteArrayOutputStream();
-			 out = new ObjectOutputStream(bOut);
-			 String imagem = "/foto " + user.getFoto()+ " "+ socket.getLocalPort();
-			 out.writeUnshared(imagem);
-			 out.flush();
+		 // if(cria){
+			 // socket = new DatagramSocket();
+			 // bOut = new ByteArrayOutputStream();
+			 // out = new ObjectOutputStream(bOut);
+			 // String imagem = "/foto " + user.getFoto()+ " "+ socket.getLocalPort();
+			 // out.writeUnshared(imagem);
+			 // out.flush();
 			 
-			 packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
-			 socket.send(packet);
-			 (tUpload = new ThreadUpload(socket, user.getFoto())).start();
-		 }
+			 // packet = new DatagramPacket(bOut.toByteArray(), bOut.size(), InetAddress.getByName(inicial.getAddr()), inicial.getPortUdp());
+			 // socket.send(packet);
+			 // (tUpload = new ThreadUpload(socket, user.getFoto())).start();
+		 // }
 		 
          socketTcp = new Socket(inicial.getAddr(), inicial.getPortTcp());
          msgEnvio = new Msg(user.getUsername(), "GET CANAL", canal);
@@ -244,7 +250,7 @@ public class Main {
          out.writeObject(msgEnvio);
          out.flush();
          
-         t = new ThreadMsg(socketTcp, lista, ServerRequest, socketUdp, canal);
+         t = new ThreadMsg(socketTcp, lista, ServerRequest, socketUdp, canal, servidorRmi);
          t.start();
          
          while (true) {
@@ -262,8 +268,15 @@ public class Main {
                   System.out.println("Erro no numero de argumentos");
                   continue;
                }
-			   
-			   servidorRmi.novaNotificacao(user.getUsername() + ": " + teclado.substring(13));
+			   try{
+					servidorRmi.novaNotificacao(user.getUsername() + ": " + teclado.substring(13));
+			   }catch (RemoteException i){
+				   if (t.isAlive()) {
+						servidorRmi = t.getServidorRmi();
+				   } else {
+						break;
+                   }
+			   }
 			   continue;
             }else
 			//----------------------------------------------------------------RMI----------------------------------------------------------------

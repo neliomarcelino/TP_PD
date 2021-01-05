@@ -51,7 +51,7 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 	}
 	
 	@Override
-	public String regista(String name, String username, String password, String foto) throws RemoteException{
+	public String regista(String name, String username, String password, String foto, UserInterface inter) throws RemoteException{
 		try {
 		//Verifica se algum parametro é null
 		if(name == null || username == null || password == null|| foto == null)
@@ -69,6 +69,51 @@ public class ServidorInterfaceImpl  extends UnicastRemoteObject implements Servi
 		
 		//Adiciona na database e manda por multicast udp a informaçao
 		if (stmt.executeUpdate("INSERT INTO UTILIZADORES (USERNAME, NOME, PASSWORD, IMAGEM, CANAL) VALUES ('" + username + "', '" + name + "', '" + password + "', '" + foto + "', '" + "NO_CHANNEL" +"');")>= 1){
+			String localFilePath;
+			FileOutputStream localFileOutputStream;
+			byte [] b;
+			long offset;
+			String fileName = foto, fileNameServer = foto;
+			File localDirectory = new File(System.getProperty("user.dir") + File.separator + "Foto_users");
+			if (!localDirectory.exists()){
+				localDirectory.mkdir();
+			}
+			
+			String[] splitFilename = fileNameServer.split("\\.");
+            File f = new File(System.getProperty("user.dir") + File.separator + "Foto_users" + File.separator + fileNameServer);
+            int i = 1;
+            while (f.isFile()) {
+                fileNameServer = splitFilename[0] + "(" + i + ")";
+                for (int j = 1; j < splitFilename.length; j++) {
+					fileNameServer += "." + splitFilename[j];
+                }
+                f = new File(System.getProperty("user.dir") + File.separator + "Foto_users" + File.separator + fileNameServer);
+                i++;
+            }
+			try{
+				localFilePath = new File(localDirectory.getPath()+File.separator+fileNameServer).getCanonicalPath();
+				localFileOutputStream = new FileOutputStream(localFilePath);
+
+				System.out.println("Ficheiro " + localFilePath + " criado.");
+
+				offset = 0;
+
+				while((b = inter.getFileChunk(fileName, offset)) != null){
+					localFileOutputStream.write(b);
+					offset += b.length;
+				}
+
+				localFileOutputStream.close();
+				System.out.println("Transferencia do ficheiro " + fileNameServer + " concluida.");
+
+			}catch(RemoteException e){
+				System.out.println("Erro remoto - " + e);
+			}catch(IOException e){
+				System.out.println("Erro E/S - " + e);
+			}catch(Exception e){
+				System.out.println("Erro - " + e);
+			}
+			
 			rs = stmt.executeQuery("SELECT MAX(timestamp) as timestamp FROM UTILIZADORES;");
 			if(rs.next()){
 				Timestamp trata = rs.getTimestamp("timestamp");
