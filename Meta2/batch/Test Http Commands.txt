@@ -1,0 +1,3 @@
+curl -i -X POST -H "content-type: application/json" -d "{\"username\":\"ola\", \"password\":\"ola\"}" localhost:8080/user/login
+curl -i -H "authorization: 9XmCzThwkyGjiPz9KRe74dfIa1Ki/tvtBhJjGkBIRpU=" localhost:8080/mensagens?numero=10
+curl -i -X POST -H "authorization: 9XmCzThwkyGjiPz9KRe74dfIa1Ki/tvtBhJjGkBIRpU=" -H "mensagem: adeus" -H "username: ola" localhost:8080/mensagemServer
